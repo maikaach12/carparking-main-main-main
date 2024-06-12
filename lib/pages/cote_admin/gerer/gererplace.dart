@@ -71,8 +71,8 @@ class _GererPlacePageState extends State<GererPlacePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors
-          .lightBlue[50], // Définit la couleur de l'arrière-plan en bleu clair
+      backgroundColor:
+          Colors.white, // Définit la couleur de l'arrière-plan en bleu clair
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

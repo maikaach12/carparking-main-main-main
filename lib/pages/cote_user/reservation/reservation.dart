@@ -3,7 +3,6 @@ import 'dart:math' as math;
 
 import 'package:carparking/pages/cote_user/MesReservationsPage.dart';
 import 'package:carparking/pages/cote_user/reservation/paiement.dart';
-import 'package:carparking/pages/cote_user/reservation/ticket.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -31,12 +30,6 @@ class _ReservationPageState extends State<ReservationPage> {
     true,
     false
   ]; // Initialisé pour sélectionner "Standard" par défaut
-  Timer? _notificationTimer;
-
-  void _showReservationNotification() {
-    // Implement your notification logic here
-    print('Notification: Your reservation is starting in 10 minutes!');
-  }
 
   Future<void> _selectDebutReservation(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -234,7 +227,9 @@ class _ReservationPageState extends State<ReservationPage> {
                 'userId': userId,
                 'matricule': _selectedMatricule,
                 'etat': 'en cours',
-                'evaluation': 0
+                'evaluation':
+                    0 // Ajouter le champ evaluation avec une valeur par défaut de 0
+
                 // Add user ID to reservation data
               }).then((documentRef) async {
                 reservationId = documentRef.id;
@@ -274,23 +269,7 @@ class _ReservationPageState extends State<ReservationPage> {
                 }
 
                 final nombreTranches = (dureeMinutes / 10).ceil();
-                int prix = (nombreTranches * prixParTranche).toInt();
-
-                final promotion = parkingDoc.data()?['promotion'];
-                if (promotion != null) {
-                  final DateTime dateDebutPromotion =
-                      promotion['dateDebutPromotion'].toDate();
-                  final DateTime dateFinPromotion =
-                      promotion['dateFinPromotion'].toDate();
-                  final double remiseEnPourcentage =
-                      promotion['remiseEnPourcentage'];
-
-                  final DateTime now = DateTime.now();
-                  if (now.isAfter(dateDebutPromotion) &&
-                      now.isBefore(dateFinPromotion)) {
-                    prix = (prix * (1 - (remiseEnPourcentage / 100))).toInt();
-                  }
-                }
+                final prix = (nombreTranches * prixParTranche).toInt();
 
                 await documentRef.update({'prix': prix});
 
@@ -412,6 +391,33 @@ class _ReservationPageState extends State<ReservationPage> {
                                 ElevatedButton.icon(
                                   style: ElevatedButton.styleFrom(
                                     foregroundColor: Colors.white,
+                                    backgroundColor: Colors.green,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    // Naviguer vers la page MesReservationsPage
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            MesReservationsPage(),
+                                      ),
+                                    );
+                                  },
+                                  icon: Icon(Icons.list),
+                                  label: Text(
+                                    'Mes réservations',
+                                    style: GoogleFonts.montserrat(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
                                     backgroundColor: Colors.blue.shade800,
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(10),
@@ -422,16 +428,15 @@ class _ReservationPageState extends State<ReservationPage> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => TicketPage(
-                                          userId: userId!,
-                                          reservationId: reservationId!,
+                                        builder: (context) => PaiementPage(
+                                          userId: '',
                                         ),
                                       ),
                                     );
                                   },
                                   icon: Icon(Icons.done),
                                   label: Text(
-                                    'voir ticket',
+                                    'OK',
                                     style: GoogleFonts.montserrat(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
