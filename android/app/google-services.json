@@ -1,13 +1,32 @@
 {
   "project_info": {
-    "project_number": "146509287944",
-    "project_id": "carparktwo-5feea",
-    "storage_bucket": "carparktwo-5feea.appspot.com"
+    "project_number": "305441934480",
+    "project_id": "carparkingfive-3c5a2",
+    "storage_bucket": "carparkingfive-3c5a2.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:146509287944:android:9d9ed261ec07cb4ca537bd",
+        "mobilesdk_app_id": "1:305441934480:android:a27b663618faaa188c9c15",
+        "android_client_info": {
+          "package_name": "com.ex"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARNs2DIK6BTmAPrGgQ4Qe8D-2uFkpFPJ0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:305441934480:android:e0dbe757d2dbed3f8c9c15",
         "android_client_info": {
           "package_name": "com.example.carparking"
         }
@@ -15,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBeKmyIeAVaHyRLcebWoq68cysyUSYm5vI"
+          "current_key": "AIzaSyARNs2DIK6BTmAPrGgQ4Qe8D-2uFkpFPJ0"
         }
       ],
       "services": {

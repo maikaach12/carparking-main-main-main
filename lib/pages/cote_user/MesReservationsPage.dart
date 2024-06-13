@@ -1,4 +1,5 @@
 import 'package:carparking/pages/cote_user/modifier_reservation_page.dart';
+import 'package:carparking/pages/cote_user/reservation/afficherticket.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -40,13 +41,10 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
 
   Future<void> _supprimerReservation(String reservationId) async {
     try {
-      // Supprimer la réservation de Firestore
       await FirebaseFirestore.instance
           .collection('reservation')
           .doc(reservationId)
           .delete();
-
-      // Mettre à jour l'interface utilisateur en supprimant la réservation de la liste
       setState(() {});
     } catch (e) {
       print('Erreur lors de la suppression de la réservation : $e');
@@ -60,7 +58,6 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
           .doc(reservationId)
           .update({'etat': 'Annulée'});
 
-      // Afficher un message de confirmation d'annulation
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Réservation annulée avec succès'),
@@ -68,7 +65,7 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
         ),
       );
 
-      setState(() {}); // Mettre à jour l'interface utilisateur
+      setState(() {});
     } catch (e) {
       print('Erreur lors de l\'annulation de la réservation : $e');
     }
@@ -77,7 +74,6 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
   Future<void> _mettreAJourMoyenneEvaluation(
       String idParking, int evaluation) async {
     try {
-      // Récupérer les données actuelles d'évaluation pour le parking
       DocumentSnapshot ratingSnapshot = await FirebaseFirestore.instance
           .collection('ratings')
           .doc(idParking)
@@ -89,21 +85,18 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
       double ancienneMoyenne = ratingData?['moyenne'] ?? 0.0;
       int nombreVotes = ratingData?['nombreVotes'] ?? 0;
 
-      // Calculer la nouvelle moyenne
       double nouvelleMoyenne =
           ((ancienneMoyenne * nombreVotes) + evaluation) / (nombreVotes + 1);
       int nouveauNombreVotes = nombreVotes + 1;
 
-      // Mettre à jour ou créer le document dans la collection 'ratings'
-      await FirebaseFirestore.instance.collection('ratings').doc(idParking).set(
-          {
-            'moyenne': nouvelleMoyenne,
-            'nombreVotes': nouveauNombreVotes,
-            'idParking': idParking, // Insérer l'ID du parking
-          },
-          SetOptions(
-              merge:
-                  true)); // Fusionner les donnéesau cas où d'autres champs existent
+      await FirebaseFirestore.instance
+          .collection('ratings')
+          .doc(idParking)
+          .set({
+        'moyenne': nouvelleMoyenne,
+        'nombreVotes': nouveauNombreVotes,
+        'idParking': idParking,
+      }, SetOptions(merge: true));
     } catch (e) {
       print('Erreur lors de la mise à jour de la moyenne d\'évaluation : $e');
     }
@@ -117,10 +110,7 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: () {
-              // Afficher un champ de recherche ou ouvrir une boîte de dialogue pour la recherche
-              // Implémentez la logique de recherche ici
-            },
+            onPressed: () {},
           ),
         ],
       ),
@@ -147,7 +137,6 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
               final reservationStatus =
                   _getReservationStatus(debutTimestamp, finTimestamp, etat);
 
-              // Récupérer le nom du parking à partir de l'ID
               return FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
                     .collection('parking')
@@ -192,6 +181,21 @@ class _MesReservationsPageState extends State<MesReservationsPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
+                                  IconButton(
+                                    icon: Icon(Icons.receipt),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              AfficherTicketPage(
+                                            userId: userId,
+                                            reservationId: reservation.id,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
                                   Expanded(
                                     child: Text(
                                       nomParking,
@@ -433,13 +437,11 @@ class _EvaluationWidgetState extends State<EvaluationWidget> {
               _evaluation = index + 1;
             });
 
-            // Mettre à jour l'évaluation de la réservation dans Firestore
             FirebaseFirestore.instance
                 .collection('reservation')
                 .doc(widget.reservationId)
                 .update({'evaluation': _evaluation});
 
-            // Mettre à jour la moyenne des évaluations pour le parking
             widget.mettreAJourMoyenneEvaluation(widget.idParking, _evaluation);
           },
           icon: Icon(

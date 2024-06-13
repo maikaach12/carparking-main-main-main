@@ -1,4 +1,9 @@
+import 'package:carparking/pages/cote_admin/gerer/acces.dart';
 import 'package:carparking/pages/cote_admin/gerer/reclamationadmindetail.dart';
+
+import 'package:carparking/pages/cote_admin/gerer/reclamhandicap.dart';
+import 'package:carparking/pages/cote_admin/gerer/reclampay.dart';
+import 'package:carparking/pages/cote_admin/gerer/secur.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +25,66 @@ class _ReclamationAdminPageState extends State<ReclamationAdminPage> {
       }
     }
     return 'Email inconnu';
+  }
+
+  void navigateToDetailPage(BuildContext context, String type, String docId,
+      Map<String, dynamic> reclamationData) {
+    switch (type) {
+      case 'Problème de paiement':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReclamationDetailsPaymentPage(
+              reclamationId: docId,
+              reclamationData: reclamationData,
+            ),
+          ),
+        );
+        break;
+      case 'Problème de sécurité':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReclamationDetailsSecurityPage(
+              reclamationId: docId,
+              reclamationData: reclamationData,
+            ),
+          ),
+        );
+        break;
+      case 'Difficulté daccès':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReclamationDetailsAccessPage(
+              reclamationId: docId,
+              reclamationData: reclamationData,
+            ),
+          ),
+        );
+        break;
+      case 'Problème de réservation de handicap':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReclamationDetailsHandicapPage(
+              reclamationId: docId,
+              reclamationData: reclamationData,
+            ),
+          ),
+        );
+        break;
+      default:
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ReclamationDetailsPage(
+              reclamationId: docId,
+              reclamationData: reclamationData,
+            ),
+          ),
+        );
+    }
   }
 
   @override
@@ -69,71 +134,45 @@ class _ReclamationAdminPageState extends State<ReclamationAdminPage> {
                             Spacer(),
                             Row(
                               children: [
-                                Text(
-                                  'Terminées: ',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '$termineeCount',
-                                  style: TextStyle(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                Text('Terminées: ',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                Text('$termineeCount',
+                                    style: TextStyle(
+                                        color: Colors.green,
+                                        fontWeight: FontWeight.bold)),
                               ],
                             ),
                             SizedBox(width: 16),
                             Row(
                               children: [
-                                Text(
-                                  'Envoyées: ',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  '$envoyeCount',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                Text('Envoyées: ',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.bold)),
+                                Text('$envoyeCount',
+                                    style: TextStyle(
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold)),
                               ],
                             ),
                           ],
                         ),
                         children: userReclamations.map((doc) {
-                          final reclamationData = doc.data();
-                          if (reclamationData is Map<String, dynamic>) {
-                            return ListTile(
-                              title: Text(reclamationData['type'] ?? ''),
-                              subtitle:
-                                  Text(reclamationData['description'] ?? ''),
-                              tileColor: reclamationData['status'] == 'terminée'
-                                  ? Colors.green.withOpacity(0.3)
-                                  : null,
-                              onTap: () {
-                                //if (reclamationData['status'] == 'en attente') {
-                                // FirebaseFirestore.instance
-                                //   .collection('reclamations')
-                                // .doc(doc.id)
-                                //.update({'status': 'en cours'});
-                                //}
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ReclamationDetailsPage(
-                                      reclamationId: doc.id,
-                                      reclamationData: reclamationData,
-                                    ),
-                                  ),
-                                );
-                              },
-                            );
-                          } else {
-                            return ListTile(
-                              title: Text('Données invalides'),
-                            );
-                          }
+                          final reclamationData =
+                              doc.data() as Map<String, dynamic>;
+                          return ListTile(
+                            title: Text(reclamationData['type'] ?? ''),
+                            subtitle:
+                                Text(reclamationData['description'] ?? ''),
+                            tileColor: reclamationData['status'] == 'terminée'
+                                ? Colors.green.withOpacity(0.3)
+                                : null,
+                            onTap: () => navigateToDetailPage(
+                                context,
+                                reclamationData['type'],
+                                doc.id,
+                                reclamationData),
+                          );
                         }).toList(),
                       ),
                     );
