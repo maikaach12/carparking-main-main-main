@@ -42,12 +42,12 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBhdEm3j9MnAJMj2BDs5QO0Uw-cNsIOuZM',
-    appId: '1:305441934480:web:1a5ba49cf8acf6868c9c15',
+    appId: '1:305441934480:web:09cae393d19753eb8c9c15',
     messagingSenderId: '305441934480',
     projectId: 'carparkingfive-3c5a2',
     authDomain: 'carparkingfive-3c5a2.firebaseapp.com',
     storageBucket: 'carparkingfive-3c5a2.appspot.com',
-    measurementId: 'G-F39QM6TYPV',
+    measurementId: 'G-9Q66MK3Z0E',
   );
 
   static const FirebaseOptions android = FirebaseOptions(

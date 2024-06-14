@@ -18,6 +18,7 @@ class _ReservationPageState extends State<reservationPage> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
+      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           Padding(
@@ -75,15 +76,8 @@ class _ReservationPageState extends State<reservationPage> {
                           style: TextStyle(fontSize: 18)));
                 }
 
-                return GridView.builder(
+                return ListView.builder(
                   padding: EdgeInsets.all(16),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount:
-                        MediaQuery.of(context).size.width > 600 ? 2 : 1,
-                    childAspectRatio: 2.5,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                  ),
                   itemCount: reservations.length,
                   itemBuilder: (context, index) {
                     final reservation = reservations[index];
@@ -96,7 +90,7 @@ class _ReservationPageState extends State<reservationPage> {
                         if (!userSnapshot.hasData) {
                           return Center(child: CircularProgressIndicator());
                         }
-                        final userData = userSnapshot.data!.data()
+                        final userData = userSnapshot.data?.data()
                             as Map<String, dynamic>?; // This avoids null error
                         final familyName =
                             userData?['familyName'] ?? 'Nom non trouvé';
@@ -111,7 +105,6 @@ class _ReservationPageState extends State<reservationPage> {
                           margin:
                               EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           color: Colors.white,
-                          // Suppression de l'ombre
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
                             child: Column(
@@ -179,7 +172,6 @@ class _ReservationPageState extends State<reservationPage> {
                                     ),
                                   ],
                                 ),
-                                Spacer(),
                                 Align(
                                   alignment: Alignment.bottomRight,
                                   child: IconButton(
@@ -310,15 +302,4 @@ class Reservation {
     required this.endTime,
     required this.idPlace,
   });
-
-  factory Reservation.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-    return Reservation(
-      id: doc.id,
-      userId: data['userId'] ?? '',
-      startTime: (data['debut'] as Timestamp).toDate(),
-      endTime: (data['fin'] as Timestamp).toDate(),
-      idPlace: data['idPlace'] ?? '',
-    );
-  }
 }

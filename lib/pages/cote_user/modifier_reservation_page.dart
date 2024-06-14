@@ -13,7 +13,7 @@ class ModifierReservationPage extends StatefulWidget {
 }
 
 class _ModifierReservationPageState extends State<ModifierReservationPage> {
-  late TextEditingController _matriculeEtMarqueController;
+  late TextEditingController _matriculeController;
   late TextEditingController _typePlaceController;
   late TextEditingController _debutController;
   late TextEditingController _finController;
@@ -25,8 +25,8 @@ class _ModifierReservationPageState extends State<ModifierReservationPage> {
     super.initState();
     _debutReservation = widget.reservation['debut'].toDate();
     _finReservation = widget.reservation['fin'].toDate();
-    _matriculeEtMarqueController =
-        TextEditingController(text: widget.reservation['matriculeEtMarque']);
+    _matriculeController =
+        TextEditingController(text: widget.reservation['matricule']);
     _typePlaceController =
         TextEditingController(text: widget.reservation['typePlace']);
     _debutController = TextEditingController(
@@ -36,17 +36,22 @@ class _ModifierReservationPageState extends State<ModifierReservationPage> {
   }
 
   Future<bool> checkPlaceAvailability() async {
-    // Récupérer toutes les réservations pour vérifier la disponibilité
-    QuerySnapshot reservationsSnapshot = await FirebaseFirestore.instance
-        .collection('reservation')
-        .where('debut', isLessThan: _finReservation)
-        .where('fin', isGreaterThan: _debutReservation)
-        .get();
+    // Récupérer toutes les réservations
+    QuerySnapshot reservationsSnapshot =
+        await FirebaseFirestore.instance.collection('reservation').get();
 
-    // Exclure la réservation actuelle de la vérification de disponibilité
-    return reservationsSnapshot.docs
-        .where((doc) => doc.id != widget.reservation.id)
-        .isEmpty;
+    // Filtrer les réservations qui se chevauchent avec les nouvelles dates
+    for (var doc in reservationsSnapshot.docs) {
+      if (doc.id != widget.reservation.id) {
+        DateTime debut = doc['debut'].toDate();
+        DateTime fin = doc['fin'].toDate();
+        if (!(_finReservation.isBefore(debut) ||
+            _debutReservation.isAfter(fin))) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   @override
@@ -142,7 +147,7 @@ class _ModifierReservationPageState extends State<ModifierReservationPage> {
                       },
                     ),
                     TextField(
-                      controller: _matriculeEtMarqueController,
+                      controller: _matriculeController,
                       decoration:
                           InputDecoration(labelText: 'Matricule et Marque'),
                     ),
@@ -163,8 +168,7 @@ class _ModifierReservationPageState extends State<ModifierReservationPage> {
                                 .update({
                               'debut': Timestamp.fromDate(_debutReservation),
                               'fin': Timestamp.fromDate(_finReservation),
-                              'matriculeEtMarque':
-                                  _matriculeEtMarqueController.text,
+                              'matriculeEtMarque': _matriculeController.text,
                               'typePlace': _typePlaceController.text,
                               // Mettre à jour d'autres champs si nécessaire
                             }).then((_) {
@@ -212,7 +216,7 @@ class _ModifierReservationPageState extends State<ModifierReservationPage> {
 
   @override
   void dispose() {
-    _matriculeEtMarqueController.dispose();
+    _matriculeController.dispose();
     _typePlaceController.dispose();
     _debutController.dispose();
     _finController.dispose();
