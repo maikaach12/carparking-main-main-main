@@ -37,6 +37,9 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
     if (documentSnapshot.exists) {
       setState(() {
         userId = documentSnapshot.get('userId');
+        if (selectedUserId.isEmpty && userId != null) {
+          selectedUserId = userId!;
+        }
       });
     }
   }
@@ -73,6 +76,23 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
   }
 
   void _showNotificationBottomSheet() {
+    List<DropdownMenuItem<String>> userItems = [
+      if (widget.reclamationData['userId'] != null)
+        DropdownMenuItem(
+          value: widget.reclamationData['userId'],
+          child: Text('Utilisateur ayant soumis la réclamation'),
+        ),
+      if (userId != null)
+        DropdownMenuItem(
+          value: userId,
+          child: Text('Utilisateur à signaler'),
+        ),
+    ];
+
+    if (selectedUserId.isEmpty && userItems.isNotEmpty) {
+      selectedUserId = userItems.first.value!;
+    }
+
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -84,25 +104,16 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
             children: [
               Text('Choisir l\'utilisateur à notifier :'),
               DropdownButton<String>(
-                value: selectedUserId.isNotEmpty ? selectedUserId : null,
+                value: userItems.any((item) => item.value == selectedUserId)
+                    ? selectedUserId
+                    : null,
                 hint: Text('Sélectionner un utilisateur'),
                 onChanged: (newValue) {
                   setState(() {
                     selectedUserId = newValue ?? '';
                   });
                 },
-                items: [
-                  if (widget.reclamationData['userId'] != null)
-                    DropdownMenuItem(
-                      value: widget.reclamationData['userId'],
-                      child: Text('Utilisateur ayant soumis la réclamation'),
-                    ),
-                  if (userId != null)
-                    DropdownMenuItem(
-                      value: userId,
-                      child: Text('Utilisateur à signaler'),
-                    ),
-                ],
+                items: userItems,
               ),
               TextField(
                 controller: typeController,
