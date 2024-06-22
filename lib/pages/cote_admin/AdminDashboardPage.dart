@@ -53,6 +53,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  void _showNotificationForm() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return NotificationForm();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -66,12 +75,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 padding: EdgeInsets.zero,
                 children: [
                   UserAccountsDrawerHeader(
-                    accountName: Text(widget.userEmail),
-                    accountEmail: Text(widget.userId),
+                    accountName: Text(
+                      widget.userEmail,
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    accountEmail: Text(
+                      widget.userId,
+                      style: TextStyle(color: Colors.white),
+                    ),
                     currentAccountPicture: CircleAvatar(
                       child: Icon(
                         Icons.person,
                         size: 40,
+                        color: Colors.blue,
                       ),
                       backgroundColor: Colors.white,
                     ),
@@ -85,34 +101,43 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     onTap: () {
                       _navigateToPage(context, ManageAccountsPage());
                     },
+                    hoverColor: Colors.grey[100],
                   ),
+                  Divider(),
                   ListTile(
                     leading: Icon(Icons.local_parking),
                     title: Text('Gérer Parking'),
                     onTap: () {
                       _navigateToPage(context, GererParkingPage());
                     },
+                    hoverColor: Colors.grey[100],
                   ),
+                  Divider(),
                   ListTile(
                     leading: Icon(Icons.error),
                     title: Text('Gérer Réclamation'),
                     onTap: () {
                       _navigateToPage(context, ReclamationAdminPage());
                     },
+                    hoverColor: Colors.grey[100],
                   ),
+                  Divider(),
                   ListTile(
                     leading: Icon(Icons.place),
                     title: Text('Gérer Place'),
                     onTap: () {
                       _navigateToPage(context, GererPlacePage());
                     },
+                    hoverColor: Colors.grey[100],
                   ),
+                  Divider(),
                   ListTile(
                     leading: Icon(Icons.book),
                     title: Text('Réservation'),
                     onTap: () {
                       _navigateToPage(context, reservationPage());
                     },
+                    hoverColor: Colors.grey[100],
                   ),
                 ],
               ),
@@ -137,15 +162,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   },
                   onStatisticsTap: () =>
                       _navigateToReservationFrequencyPage(context),
+                  onNotificationTap:
+                      _showNotificationForm, // Add notification callback
                 ),
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.all(20.0),
-                          child: TopUserWidget(),
-                        ),
+                        if (!_showSidebar)
+                          Padding(
+                            padding: const EdgeInsets.all(20.0),
+                            child: TopUserWidget(),
+                          ),
                         Wrap(
                           spacing: 10.0,
                           runSpacing: 10.0,
@@ -179,11 +207,13 @@ class Navbar extends StatelessWidget {
   final VoidCallback onMenuTap;
   final VoidCallback onHomeTap;
   final VoidCallback onStatisticsTap;
+  final VoidCallback onNotificationTap; // New callback for notification
 
   Navbar({
     required this.onMenuTap,
     required this.onHomeTap,
     required this.onStatisticsTap,
+    required this.onNotificationTap, // Add new parameter
   });
 
   @override
@@ -205,6 +235,10 @@ class Navbar extends StatelessWidget {
           IconButton(
             onPressed: onStatisticsTap,
             icon: Icon(Icons.bar_chart),
+          ),
+          IconButton(
+            onPressed: onNotificationTap, // Add notification icon
+            icon: Icon(Icons.notifications),
           ),
         ],
       ),
@@ -297,7 +331,7 @@ class _GererParkingPageState extends State<GererParkingPage> {
                     ),
                     IconButton(
                       onPressed: () => _ajouterPromotion(parkingId),
-                      icon: Icon(Icons.add_box),
+                      icon: Icon(Icons.local_offer),
                     ),
                   ],
                 ),
@@ -306,6 +340,84 @@ class _GererParkingPageState extends State<GererParkingPage> {
           );
         },
       ),
+    );
+  }
+}
+
+class NotificationForm extends StatefulWidget {
+  @override
+  _NotificationFormState createState() => _NotificationFormState();
+}
+
+class _NotificationFormState extends State<NotificationForm> {
+  final _formKey = GlobalKey<FormState>();
+  String _description = '';
+
+  void _sendNotification() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+
+      // Fetch all users from the 'users' collection
+      final usersSnapshot =
+          await FirebaseFirestore.instance.collection('users').get();
+
+      // Create a notification for each user
+      for (var userDoc in usersSnapshot.docs) {
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'type': 'Rappel',
+          'description': _description,
+          'userId': userDoc.id,
+          'timestamp': Timestamp.now(),
+          'isRead': false,
+        });
+      }
+
+      // Close the form
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Envoyer une Notification'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: 'Rappel',
+              enabled: false,
+              decoration: InputDecoration(labelText: 'Type'),
+            ),
+            TextFormField(
+              decoration: InputDecoration(labelText: 'Description'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Veuillez entrer une description';
+                }
+                return null;
+              },
+              onSaved: (value) {
+                _description = value!;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          child: Text('Annuler', style: TextStyle(color: Colors.blue)),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: Text('OK', style: TextStyle(color: Colors.blue)),
+          onPressed: _sendNotification,
+        ),
+      ],
     );
   }
 }

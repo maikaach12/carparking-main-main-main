@@ -125,55 +125,58 @@ class _ReclamationAdminPageState extends State<ReclamationAdminPage> {
                 builder: (context, snapshot) {
                   if (snapshot.hasData) {
                     final userEmail = snapshot.data!;
-                    return Container(
-                      padding: EdgeInsets.only(right: 16.0),
-                      child: ExpansionTile(
-                        title: Row(
-                          children: [
-                            Text('$userEmail '),
-                            Spacer(),
-                            Row(
-                              children: [
-                                Text('Terminées: ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text('$termineeCount',
-                                    style: TextStyle(
-                                        color: Colors.green,
-                                        fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            SizedBox(width: 16),
-                            Row(
-                              children: [
-                                Text('Envoyées: ',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Text('$envoyeCount',
-                                    style: TextStyle(
-                                        color: Colors.red,
-                                        fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          ],
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Card(
+                        child: ExpansionTile(
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text('$userEmail'),
+                              ),
+                              Row(
+                                children: [
+                                  Text('Terminées: ',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text('$termineeCount',
+                                      style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                              SizedBox(width: 16),
+                              Row(
+                                children: [
+                                  Text('Envoyées: ',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold)),
+                                  Text('$envoyeCount',
+                                      style: TextStyle(
+                                          color: Colors.red,
+                                          fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ],
+                          ),
+                          children: userReclamations.map((doc) {
+                            final reclamationData =
+                                doc.data() as Map<String, dynamic>;
+                            return ListTile(
+                              title: Text(reclamationData['type'] ?? ''),
+                              subtitle:
+                                  Text(reclamationData['description'] ?? ''),
+                              tileColor: reclamationData['status'] == 'terminée'
+                                  ? Colors.green.withOpacity(0.3)
+                                  : null,
+                              onTap: () => navigateToDetailPage(
+                                  context,
+                                  reclamationData['type'],
+                                  doc.id,
+                                  reclamationData),
+                            );
+                          }).toList(),
                         ),
-                        children: userReclamations.map((doc) {
-                          final reclamationData =
-                              doc.data() as Map<String, dynamic>;
-                          return ListTile(
-                            title: Text(reclamationData['type'] ?? ''),
-                            subtitle:
-                                Text(reclamationData['description'] ?? ''),
-                            tileColor: reclamationData['status'] == 'terminée'
-                                ? Colors.green.withOpacity(0.3)
-                                : null,
-                            onTap: () => navigateToDetailPage(
-                                context,
-                                reclamationData['type'],
-                                doc.id,
-                                reclamationData),
-                          );
-                        }).toList(),
                       ),
                     );
                   } else {

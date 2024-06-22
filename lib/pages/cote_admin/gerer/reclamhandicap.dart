@@ -1,5 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 class ReclamationDetailsHandicapPage extends StatefulWidget {
   final String reclamationId;
@@ -18,24 +22,81 @@ class ReclamationDetailsHandicapPage extends StatefulWidget {
 class _ReclamationDetailsHandicapPageState
     extends State<ReclamationDetailsHandicapPage> {
   String reponse = '';
+  String? userId;
+  Map<String, dynamic>? userData;
   List<String> predefinedMessages = [
     "Bonjour, nous avons bien reçu votre réclamation concernant le problème de réservation de handicap. Nous travaillons activement pour résoudre cette situation au plus vite. Merci pour votre patience.",
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    userId = widget.reclamationData['userId'];
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (userId != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          userData = userDoc.data() as Map<String, dynamic>?;
+        });
+      }
+    }
+  }
+
   void _sendNotification(String userId, String message) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'message': message,
+      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
     });
+  }
+
+  Future<void> _downloadPDF() async {
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        build: (context) => pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text('Détails de la réclamation - Handicap',
+                style: pw.TextStyle(fontSize: 24)),
+            pw.SizedBox(height: 16),
+            pw.Text('Type: ${widget.reclamationData['type']}'),
+            pw.Text('Description: ${widget.reclamationData['description']}'),
+            pw.Text('Statut: ${widget.reclamationData['status']}'),
+            if (userData != null) ...[
+              pw.Text('Nom: ${userData!['name']}'),
+              pw.Text('Prénom: ${userData!['familyName']}'),
+              pw.Text('Email: ${userData!['email']}'),
+              pw.Text('Numéro de téléphone: ${userData!['phoneNumber']}'),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    await Printing.layoutPdf(
+        onLayout: (PdfPageFormat format) async => pdf.save());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Détails de la réclamation - Handicap'),
+        title: Text(
+          'Détails de la réclamation - Handicap',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20.0,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.send),
@@ -45,6 +106,10 @@ class _ReclamationDetailsHandicapPageState
               }
             },
           ),
+          IconButton(
+            icon: Icon(Icons.download),
+            onPressed: _downloadPDF,
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -53,37 +118,81 @@ class _ReclamationDetailsHandicapPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                child: ListTile(
-                  title: Text('Type'),
-                  subtitle: Text(widget.reclamationData['type'] ?? ''),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  title: Text('Description'),
-                  subtitle: Text(widget.reclamationData['description'] ?? ''),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  title: Text('Statut'),
-                  subtitle: Text(widget.reclamationData['status'] ?? ''),
+              Text(
+                'Informations de la réclamation',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
                 ),
               ),
               SizedBox(height: 16.0),
-              Text('Messages prédéfinis :'),
-              for (var message in predefinedMessages)
-                ListTile(
-                  title: Text(message),
-                  onTap: () {
-                    setState(() {
-                      reponse = message;
-                    });
-                  },
-                  tileColor:
-                      reponse == message ? Colors.blue.withOpacity(0.3) : null,
+              _buildInfoCard(
+                'Type',
+                widget.reclamationData['type'] ?? '',
+                icon: Icons.category,
+              ),
+              _buildInfoCard(
+                'Description',
+                widget.reclamationData['description'] ?? '',
+                icon: Icons.description,
+              ),
+              _buildInfoCard(
+                'Statut',
+                widget.reclamationData['status'] ?? '',
+                icon: Icons.info,
+              ),
+              if (userData != null) ...[
+                SizedBox(height: 16.0),
+                Text(
+                  'Informations client',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                  ),
                 ),
+                _buildInfoCard(
+                  'Nom',
+                  userData!['name'] ?? '',
+                  icon: Icons.person,
+                ),
+                _buildInfoCard(
+                  'Prénom',
+                  userData!['familyName'] ?? '',
+                  icon: Icons.person,
+                ),
+                _buildInfoCard(
+                  'Email',
+                  userData!['email'] ?? '',
+                  icon: Icons.email,
+                ),
+                _buildInfoCard(
+                  'Numéro de téléphone',
+                  userData!['phoneNumber'] ?? '',
+                  icon: Icons.phone,
+                ),
+              ],
+              SizedBox(height: 16.0),
+              Text(
+                'Messages prédéfinis',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
+                ),
+              ),
+              SizedBox(height: 8.0),
+              ...predefinedMessages.map((message) => Card(
+                    child: ListTile(
+                      title: Text(message),
+                      onTap: () {
+                        setState(() {
+                          reponse = message;
+                        });
+                      },
+                      tileColor: reponse == message
+                          ? Colors.blue.withOpacity(0.3)
+                          : null,
+                    ),
+                  )),
               SizedBox(height: 16.0),
               TextField(
                 onChanged: (value) {
@@ -111,7 +220,6 @@ class _ReclamationDetailsHandicapPageState
                 },
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
@@ -120,6 +228,40 @@ class _ReclamationDetailsHandicapPageState
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String subtitle,
+      {required IconData icon}) {
+    return Card(
+      elevation: 2.0, // Ajoute une légère ombre pour un effet de relief
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0), // Bords arrondis
+      ),
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: Colors.blue, // Couleur de l'icône
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold, // Titre en gras
+            fontSize: 16.0, // Taille de police du titre
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14.0, // Taille de police du sous-titre
+          ),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16.0, // Espacement horizontal du contenu
+          vertical: 12.0, // Espacement vertical du contenu
         ),
       ),
     );

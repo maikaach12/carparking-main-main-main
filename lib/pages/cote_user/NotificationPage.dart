@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // Ajoutez cette ligne pour formater les dates
+import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class NotificationPage extends StatefulWidget {
   final String userId;
@@ -28,6 +29,16 @@ class _NotificationPageState extends State<NotificationPage> {
       for (DocumentSnapshot doc in snapshot.docs) {
         await doc.reference.update({'isRead': true});
       }
+
+      QuerySnapshot globalSnapshot = await FirebaseFirestore.instance
+          .collection('notifications')
+          .where('userId', isNull: true)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      for (DocumentSnapshot doc in globalSnapshot.docs) {
+        await doc.reference.update({'isRead': true});
+      }
     } catch (e) {
       print('Error marking notifications as read: $e');
     }
@@ -48,38 +59,50 @@ class _NotificationPageState extends State<NotificationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Notifications'),
+        title: Text('Notifications',
+            style: GoogleFonts.roboto(
+                color: Colors.black, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.more_vert, color: Colors.black),
+            onPressed: () {
+              // Action pour le bouton de menu
+            },
+          ),
+        ],
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('notifications')
-            .where('userId', isEqualTo: widget.userId)
-            .orderBy('timestamp', descending: true)
+            .orderBy('timestamp',
+                descending: true) // Trier par timestamp en ordre décroissant
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            print('Stream error: ${snapshot.error}');
-            return Center(
-              child: Text('Erreur: ${snapshot.error}'),
-            );
+            return Center(child: Text('Erreur: ${snapshot.error}'));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(),
-            );
+            return Center(child: CircularProgressIndicator());
           }
 
-          final notifications = snapshot.data!.docs;
+          final notifications = snapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['userId'] == widget.userId || data['userId'] == null;
+          }).toList();
+
           if (notifications.isEmpty) {
             return Center(
-              child: Text('Aucune notification',
-                  style: TextStyle(fontSize: 18, color: Colors.blueGrey)),
-            );
+                child: Text('Aucune notification',
+                    style: GoogleFonts.roboto(fontSize: 18)));
           }
 
-          return ListView.builder(
+          return ListView.separated(
             itemCount: notifications.length,
+            separatorBuilder: (context, index) =>
+                Divider(height: 1, color: Colors.grey[300]),
             itemBuilder: (context, index) {
               final notification =
                   notifications[index].data() as Map<String, dynamic>;
@@ -88,77 +111,68 @@ class _NotificationPageState extends State<NotificationPage> {
               final description = notification['description'];
               final timestamp = notification['timestamp'] as Timestamp;
               final formattedTime =
-                  DateFormat('dd/MM/yyyy HH:mm').format(timestamp.toDate());
+                  DateFormat('HH:mm').format(timestamp.toDate());
+              final formattedDate = _getFormattedDate(timestamp.toDate());
 
-              // Sélectionner l'icône en fonction du type de notification
-              Icon notificationIcon = Icon(Icons.notifications);
-              if (type == 'Annulation de reservation') {
-                notificationIcon = Icon(Icons.cancel, color: Colors.red);
+              Color iconColor = Colors.purple;
+              IconData iconData = Icons.notifications;
+
+              // Définir l'icône et la couleur en fonction du type de notification
+              switch (type) {
+                case 'Rappel':
+                  iconColor = Colors.orange;
+                  iconData = Icons.notifications;
+                  break;
+                case 'Annulation de réservation':
+                  iconColor = Colors.red;
+                  iconData = Icons.cancel;
+                  break;
+                case 'Réservation':
+                  iconColor = Colors.orange;
+                  iconData = Icons.hotel;
+                  break;
+                case 'réclamation':
+                  iconColor = Colors.blue;
+                  iconData = Icons.report;
+                  break;
+                case 'Offre':
+                  iconColor = Colors.green;
+                  iconData = Icons.local_offer;
+                  break;
               }
 
-              return Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-                child: Card(
-                  color: Colors.grey.withOpacity(0.1), // Opacité 0.1
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
+              return Dismissible(
+                key: Key(notificationId),
+                background: Container(
+                  color: Colors.red,
+                  alignment: Alignment.centerRight,
+                  padding: EdgeInsets.only(right: 20.0),
+                  child: Icon(Icons.delete, color: Colors.white),
+                ),
+                direction: DismissDirection.endToStart,
+                onDismissed: (direction) {
+                  _deleteNotification(notificationId);
+                },
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: iconColor.withOpacity(0.2),
+                    child: Icon(iconData, color: iconColor),
                   ),
-                  child: Column(
+                  title: Text(type,
+                      style: GoogleFonts.roboto(fontWeight: FontWeight.bold)),
+                  subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListTile(
-                        leading: Container(
-                          padding: EdgeInsets.all(8.0),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                          ),
-                          child:
-                              notificationIcon, // Utiliser l'icône sélectionnée
-                        ),
-                        title: Text(
-                          type,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                            color: Colors.blueGrey[800],
-                          ),
-                        ),
-                        trailing: IconButton(
-                          icon: Icon(Icons.close, color: Colors.red, size: 20),
-                          onPressed: () {
-                            _deleteNotification(notificationId);
-                          },
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 16.0, right: 16.0, bottom: 8.0),
-                        child: Text(
-                          description,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding:
-                            const EdgeInsets.only(right: 16.0, bottom: 8.0),
-                        child: Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            formattedTime,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ),
+                      SizedBox(height: 4),
+                      Text(description, style: GoogleFonts.roboto()),
+                      SizedBox(height: 4),
+                      Text(formattedDate,
+                          style: GoogleFonts.roboto(
+                              color: Colors.grey[600], fontSize: 12)),
                     ],
                   ),
+                  trailing: Text(formattedTime,
+                      style: GoogleFonts.roboto(color: Colors.grey[600])),
                 ),
               );
             },
@@ -166,5 +180,20 @@ class _NotificationPageState extends State<NotificationPage> {
         },
       ),
     );
+  }
+
+  String _getFormattedDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays == 0) {
+      return 'Aujourd\'hui';
+    } else if (difference.inDays == 1) {
+      return 'Hier';
+    } else if (difference.inDays < 7) {
+      return DateFormat('EEEE').format(date);
+    } else {
+      return DateFormat('d MMM y').format(date);
+    }
   }
 }

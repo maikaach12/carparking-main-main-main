@@ -63,7 +63,7 @@ class _ReclamationDetailsSecurityPageState
   void _sendNotification(String userId, String message) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'message': message,
+      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
     });

@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class ReclamationDetailsPaymentPage extends StatefulWidget {
   final String reclamationId;
@@ -18,17 +19,42 @@ class ReclamationDetailsPaymentPage extends StatefulWidget {
 class _ReclamationDetailsPaymentPageState
     extends State<ReclamationDetailsPaymentPage> {
   String reponse = '';
-  List<String> predefinedMessages = [
-    "Réclamation reçue concernant un problème de paiement. Nous étudions la situation pour résoudre le problème rapidement. Nous vous tiendrons informés.",
-    "Après vérification, le problème de paiement était dû à une erreur technique. Correction apportée.",
-    "Problème de paiement lié à la connexion Internet. Réseau renforcé.",
-    "Vous pouvez payer plus tard au niveau du parking.",
-  ];
+  String? userId;
+  Map<String, dynamic>? userData;
+  List<String> predefinedMessages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    userId = widget.reclamationData['userId'];
+    _fetchUserData();
+
+    predefinedMessages = [
+      "Réclamation reçue concernant un problème de paiement. Nous étudions la situation pour résoudre le problème rapidement. Nous vous tiendrons informés.",
+      "Après vérification, le problème de paiement était dû à une erreur technique. Correction apportée.",
+      "Problème de paiement lié à la connexion Internet. Réseau renforcé.",
+      "Vous pouvez payer plus tard au niveau du parking.",
+    ];
+  }
+
+  Future<void> _fetchUserData() async {
+    if (userId != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          userData = userDoc.data() as Map<String, dynamic>?;
+        });
+      }
+    }
+  }
 
   void _sendNotification(String userId, String message) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'message': message,
+      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
     });
@@ -38,7 +64,13 @@ class _ReclamationDetailsPaymentPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Détails de la réclamation - Paiement'),
+        title: Text(
+          'Détails de la réclamation - Paiement',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20.0,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.send),
@@ -56,37 +88,81 @@ class _ReclamationDetailsPaymentPageState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                child: ListTile(
-                  title: Text('Type'),
-                  subtitle: Text(widget.reclamationData['type'] ?? ''),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  title: Text('Description'),
-                  subtitle: Text(widget.reclamationData['description'] ?? ''),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  title: Text('Statut'),
-                  subtitle: Text(widget.reclamationData['status'] ?? ''),
+              Text(
+                'Informations de la réclamation',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
                 ),
               ),
               SizedBox(height: 16.0),
-              Text('Messages prédéfinis :'),
-              for (var message in predefinedMessages)
-                ListTile(
-                  title: Text(message),
-                  onTap: () {
-                    setState(() {
-                      reponse = message;
-                    });
-                  },
-                  tileColor:
-                      reponse == message ? Colors.blue.withOpacity(0.3) : null,
+              _buildInfoCard(
+                'Type',
+                widget.reclamationData['type'] ?? '',
+                icon: Icons.category,
+              ),
+              _buildInfoCard(
+                'Description',
+                widget.reclamationData['description'] ?? '',
+                icon: Icons.description,
+              ),
+              _buildInfoCard(
+                'Statut',
+                widget.reclamationData['status'] ?? '',
+                icon: Icons.info,
+              ),
+              if (userData != null) ...[
+                SizedBox(height: 16.0),
+                Text(
+                  'Informations client',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
+                  ),
                 ),
+                _buildInfoCard(
+                  'Nom',
+                  userData!['name'] ?? '',
+                  icon: Icons.person,
+                ),
+                _buildInfoCard(
+                  'Prénom',
+                  userData!['familyName'] ?? '',
+                  icon: Icons.person,
+                ),
+                _buildInfoCard(
+                  'Email',
+                  userData!['email'] ?? '',
+                  icon: Icons.email,
+                ),
+                _buildInfoCard(
+                  'Numéro de téléphone',
+                  userData!['phoneNumber'] ?? '',
+                  icon: Icons.phone,
+                ),
+              ],
+              SizedBox(height: 16.0),
+              Text(
+                'Messages prédéfinis',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
+                ),
+              ),
+              SizedBox(height: 8.0),
+              ...predefinedMessages.map((message) => Card(
+                    child: ListTile(
+                      title: Text(message),
+                      onTap: () {
+                        setState(() {
+                          reponse = message;
+                        });
+                      },
+                      tileColor: reponse == message
+                          ? Colors.blue.withOpacity(0.3)
+                          : null,
+                    ),
+                  )),
               SizedBox(height: 16.0),
               TextField(
                 onChanged: (value) {
@@ -114,7 +190,6 @@ class _ReclamationDetailsPaymentPageState
                 },
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
                   backgroundColor: Colors.green,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.0),
@@ -123,6 +198,40 @@ class _ReclamationDetailsPaymentPageState
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String subtitle,
+      {required IconData icon}) {
+    return Card(
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: Colors.blue,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14.0,
+          ),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 12.0,
         ),
       ),
     );

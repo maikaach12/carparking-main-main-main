@@ -92,11 +92,8 @@ class _ReclamationPageState extends State<ReclamationPage> {
 
   Future<List<String>> getMatriculesForUser(String userId) async {
     List<String> matricules = [];
-    QuerySnapshot<Map<String, dynamic>> snapshot = await FirebaseFirestore
-        .instance
-        .collection('véhicule')
-        .where('userId', isEqualTo: userId)
-        .get();
+    QuerySnapshot<Map<String, dynamic>> snapshot =
+        await FirebaseFirestore.instance.collection('véhicule').get();
 
     snapshot.docs.forEach((doc) {
       matricules.add(doc.id);
@@ -680,137 +677,131 @@ class _ReclamationPageState extends State<ReclamationPage> {
                                                 ),
                                               if (selectedDescription ==
                                                   "problème de vols dans le parking")
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    SizedBox(height: 16),
-                                                    Text(
-                                                      '3. Entrez les détails du vol',
-                                                      style: TextStyle(
-                                                        fontSize: 18,
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 8),
-                                                    ElevatedButton(
-                                                      onPressed: () =>
-                                                          _selectDate(context),
-                                                      child: Text(
-                                                        selectedDate == null
-                                                            ? 'Sélectionnez la date'
-                                                            : 'Date: ${selectedDate!.toLocal()}'
-                                                                .split(' ')[0],
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 8),
-                                                    ElevatedButton(
-                                                      onPressed: () =>
-                                                          _selectTime(context),
-                                                      child: Text(
-                                                        selectedTime == null
-                                                            ? 'Sélectionnez l\'heure'
-                                                            : 'Heure: ${selectedTime!.format(context)}',
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 8),
-                                                    Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                        border: Border.all(
-                                                          color: Colors.grey,
+                                                Card(
+                                                  elevation: 4,
+                                                  shape: RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              15)),
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            16.0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          '3. Détails du vol',
+                                                          style: TextStyle(
+                                                              fontSize: 18,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold),
                                                         ),
-                                                      ),
-                                                      child: TextField(
-                                                        onChanged: (value) {
-                                                          setState(() {
-                                                            theftLocation =
-                                                                value;
-                                                          });
-                                                        },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          contentPadding:
-                                                              EdgeInsets
-                                                                  .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8,
-                                                          ),
-                                                          hintText:
-                                                              'Entrez le lieu',
-                                                          border:
-                                                              InputBorder.none,
+                                                        SizedBox(height: 16),
+                                                        Row(
+                                                          children: [
+                                                            Expanded(
+                                                              child:
+                                                                  ElevatedButton
+                                                                      .icon(
+                                                                icon: Icon(Icons
+                                                                    .calendar_today),
+                                                                label: Text(selectedDate ==
+                                                                        null
+                                                                    ? 'Date'
+                                                                    : '${selectedDate!.toLocal()}'
+                                                                        .split(
+                                                                            ' ')[0]),
+                                                                onPressed: () =>
+                                                                    _selectDate(
+                                                                        context),
+                                                                style: ElevatedButton
+                                                                    .styleFrom(
+                                                                  foregroundColor:
+                                                                      Colors.blue[
+                                                                          800],
+                                                                  backgroundColor:
+                                                                      Colors.blue[
+                                                                          100],
+                                                                  shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              10)),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                            SizedBox(width: 16),
+                                                            Expanded(
+                                                              child:
+                                                                  ElevatedButton
+                                                                      .icon(
+                                                                icon: Icon(Icons
+                                                                    .access_time),
+                                                                label: Text(selectedTime ==
+                                                                        null
+                                                                    ? 'Heure'
+                                                                    : selectedTime!
+                                                                        .format(
+                                                                            context)),
+                                                                onPressed: () =>
+                                                                    _selectTime(
+                                                                        context),
+                                                                style: ElevatedButton
+                                                                    .styleFrom(
+                                                                  foregroundColor:
+                                                                      Colors.blue[
+                                                                          800],
+                                                                  backgroundColor:
+                                                                      Colors.blue[
+                                                                          100],
+                                                                  shape: RoundedRectangleBorder(
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                              10)),
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ],
                                                         ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 8),
-                                                    Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                        border: Border.all(
-                                                          color: Colors.grey,
+                                                        SizedBox(height: 16),
+                                                        CustomTextField(
+                                                          icon:
+                                                              Icons.location_on,
+                                                          hint: 'Lieu du vol',
+                                                          onChanged: (value) =>
+                                                              setState(() =>
+                                                                  theftLocation =
+                                                                      value),
                                                         ),
-                                                      ),
-                                                      child: TextField(
-                                                        onChanged: (value) {
-                                                          setState(() {
-                                                            theftPlaceId =
-                                                                value;
-                                                          });
-                                                        },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          contentPadding:
-                                                              EdgeInsets
-                                                                  .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8,
-                                                          ),
-                                                          hintText:
-                                                              'Entrez l\'ID de la place',
-                                                          border:
-                                                              InputBorder.none,
+                                                        SizedBox(height: 16),
+                                                        CustomTextField(
+                                                          icon: Icons
+                                                              .confirmation_number,
+                                                          hint:
+                                                              'ID de la place',
+                                                          onChanged: (value) =>
+                                                              setState(() =>
+                                                                  theftPlaceId =
+                                                                      value),
                                                         ),
-                                                      ),
-                                                    ),
-                                                    SizedBox(height: 8),
-                                                    Container(
-                                                      decoration: BoxDecoration(
-                                                        borderRadius:
-                                                            BorderRadius
-                                                                .circular(10),
-                                                        border: Border.all(
-                                                          color: Colors.grey,
-                                                        ),
-                                                      ),
-                                                      child: TextField(
-                                                        onChanged: (value) {
-                                                          setState(() {
-                                                            theftDescription =
-                                                                value;
-                                                          });
-                                                        },
-                                                        decoration:
-                                                            InputDecoration(
-                                                          contentPadding:
-                                                              EdgeInsets
-                                                                  .symmetric(
-                                                            horizontal: 16,
-                                                            vertical: 8,
-                                                          ),
-                                                          hintText:
+                                                        SizedBox(height: 16),
+                                                        CustomTextField(
+                                                          icon:
+                                                              Icons.description,
+                                                          hint:
                                                               'Description du vol',
-                                                          border:
-                                                              InputBorder.none,
+                                                          maxLines: 3,
+                                                          onChanged: (value) =>
+                                                              setState(() =>
+                                                                  theftDescription =
+                                                                      value),
                                                         ),
-                                                      ),
+                                                      ],
                                                     ),
-                                                  ],
+                                                  ),
                                                 ),
                                               SizedBox(height: 32),
                                               ElevatedButton(
@@ -936,6 +927,41 @@ class _ReclamationPageState extends State<ReclamationPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Réclamation enregistrée avec succès'),
+      ),
+    );
+  }
+}
+
+class CustomTextField extends StatelessWidget {
+  final IconData icon;
+  final String hint;
+  final Function(String) onChanged;
+  final int maxLines;
+
+  const CustomTextField({
+    Key? key,
+    required this.icon,
+    required this.hint,
+    required this.onChanged,
+    this.maxLines = 1,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: TextField(
+        onChanged: onChanged,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          prefixIcon: Icon(icon, color: Colors.blue[800]),
+          hintText: hint,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
       ),
     );
   }

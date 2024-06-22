@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'package:google_fonts/google_fonts.dart';
 
 class AjouterPlacePage extends StatefulWidget {
   @override
@@ -48,7 +49,6 @@ class _AjouterPlacePageState extends State<AjouterPlacePage> {
       String number = numbers[random.nextInt(numbers.length)];
       String customId = '$letter$number';
 
-      // Check if the ID already exists in the collection
       QuerySnapshot querySnapshot = await _firestore
           .collection('place')
           .where('id', isEqualTo: customId)
@@ -64,28 +64,33 @@ class _AjouterPlacePageState extends State<AjouterPlacePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Ajouter une place'),
+        title: Text(
+          'Ajouter une place',
+          style: GoogleFonts.montserrat(
+            color: Colors.black,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
       body: Stack(
         children: [
-          // Image d'arrière-plan
           Image.asset(
             'lib/images/blue.png',
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
           ),
-          // Formulaire
           Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Container(
-                padding: const EdgeInsets.all(20.0),
-                decoration: BoxDecoration(
-                  color: Color.fromARGB(255, 250, 248, 248),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: SingleChildScrollView(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Container(
+                  padding: const EdgeInsets.all(15.0),
+                  decoration: BoxDecoration(
+                    color: Color.fromARGB(255, 250, 248, 248),
+                    borderRadius: BorderRadius.circular(15),
+                  ),
                   child: Form(
                     key: _formKey,
                     child: Column(
@@ -109,24 +114,34 @@ class _AjouterPlacePageState extends State<AjouterPlacePage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        DropdownButtonFormField<String>(
-                          value: _selectedParkingId,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedParkingId = value;
-                            });
-                          },
-                          items: _parkingNames.map((name) {
-                            return DropdownMenuItem<String>(
-                              value: _parkingIdMap[name],
-                              child: Text(
-                                name,
-                                style: TextStyle(
-                                  fontFamily: 'Montserrat',
-                                ),
+                        LayoutBuilder(
+                          builder: (BuildContext context,
+                              BoxConstraints constraints) {
+                            return Container(
+                              width: constraints.maxWidth,
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedParkingId,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedParkingId = value;
+                                  });
+                                },
+                                isExpanded: true,
+                                items: _parkingNames.map((name) {
+                                  return DropdownMenuItem<String>(
+                                    value: _parkingIdMap[name],
+                                    child: Text(
+                                      name,
+                                      style: TextStyle(
+                                        fontFamily: 'Montserrat',
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }).toList(),
                               ),
                             );
-                          }).toList(),
+                          },
                         ),
                         SizedBox(height: 16.0),
                         Text(
@@ -193,38 +208,29 @@ class _AjouterPlacePageState extends State<AjouterPlacePage> {
   }
 
   Future<void> _addPlace() async {
-    // Generate a custom ID
     String customId = await _generateCustomId();
 
-    // Add the new place to the 'place' collection with the custom ID
     await _firestore.collection('place').doc(customId).set({
       'id': customId,
       'id_parking': _selectedParkingId,
       'type': _selectedType,
     });
 
-    // Get the reference to the 'parking' document with the selected parking ID
     DocumentReference parkingRef =
         _firestore.collection('parking').doc(_selectedParkingId);
 
-    // Get the current values of 'capacite' and 'placesDisponible' for the selected parking
     DocumentSnapshot parkingSnapshot = await parkingRef.get();
     int currentCapacite = parkingSnapshot.get('capacite') ?? 0;
     int currentPlacesDisponibles = parkingSnapshot.get('placesDisponible') ?? 0;
 
-    // Increment the 'capacite' value
     int newCapacite = currentCapacite + 1;
-
-    // Calculate the new value of 'placesDisponible'
     int newPlacesDisponibles = currentPlacesDisponibles + 1;
 
-    // Update the 'parking' document with the new 'capacite' and 'placesDisponible' values
     await parkingRef.update({
       'capacite': newCapacite,
       'placesDisponible': newPlacesDisponibles,
     });
 
-    // Show the confirmation dialog
     _showConfirmationDialog(customId);
   }
 

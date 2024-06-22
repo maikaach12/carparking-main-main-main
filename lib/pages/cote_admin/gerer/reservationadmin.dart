@@ -9,6 +9,7 @@ class reservationPage extends StatefulWidget {
 
 class _ReservationPageState extends State<reservationPage> {
   String searchQuery = '';
+  List<String> canceledReservations = [];
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +19,6 @@ class _ReservationPageState extends State<reservationPage> {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         centerTitle: true,
       ),
-      resizeToAvoidBottomInset: true,
       body: Column(
         children: [
           Padding(
@@ -48,6 +48,7 @@ class _ReservationPageState extends State<reservationPage> {
                   return Center(child: CircularProgressIndicator());
                 }
                 final reservations = snapshot.data!.docs.where((doc) {
+                  if (canceledReservations.contains(doc.id)) return false;
                   final data = doc.data() as Map<String, dynamic>;
                   final startTime = (data['debut'] as Timestamp).toDate();
                   final endTime = (data['fin'] as Timestamp).toDate();
@@ -67,6 +68,7 @@ class _ReservationPageState extends State<reservationPage> {
                     startTime: (data['debut'] as Timestamp).toDate(),
                     endTime: (data['fin'] as Timestamp).toDate(),
                     idPlace: data['idPlace'] ?? '',
+                    etat: data['etat'] ?? 'en cours',
                   );
                 }).toList();
 
@@ -76,8 +78,15 @@ class _ReservationPageState extends State<reservationPage> {
                           style: TextStyle(fontSize: 18)));
                 }
 
-                return ListView.builder(
+                return GridView.builder(
                   padding: EdgeInsets.all(16),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount:
+                        MediaQuery.of(context).size.width > 600 ? 2 : 1,
+                    childAspectRatio: 2.5,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
                   itemCount: reservations.length,
                   itemBuilder: (context, index) {
                     final reservation = reservations[index];
@@ -90,8 +99,8 @@ class _ReservationPageState extends State<reservationPage> {
                         if (!userSnapshot.hasData) {
                           return Center(child: CircularProgressIndicator());
                         }
-                        final userData = userSnapshot.data?.data()
-                            as Map<String, dynamic>?; // This avoids null error
+                        final userData =
+                            userSnapshot.data!.data() as Map<String, dynamic>?;
                         final familyName =
                             userData?['familyName'] ?? 'Nom non trouvé';
                         final name = userData?['name'] ?? 'Prénom non trouvé';
@@ -107,88 +116,98 @@ class _ReservationPageState extends State<reservationPage> {
                           color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Icon(Icons.person,
-                                        size: 20, color: Colors.black),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '$familyName $name',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
+                            child: SingleChildScrollView(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(Icons.person,
+                                          size: 20, color: Colors.black),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '$familyName $name',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        overflow: TextOverflow.ellipsis,
                                       ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(Icons.local_parking_sharp,
-                                        size: 20, color: Colors.black),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        reservation.idPlace,
-                                        style: TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 8),
-                                Row(
-                                  children: [
-                                    Icon(Icons.access_time,
-                                        size: 20, color: Colors.blue),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '${DateFormat('dd/MM/yyyy HH:mm').format(reservation.startTime)}',
-                                        style: TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.timer_off,
-                                        size: 20, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Expanded(
-                                      child: Text(
-                                        '${DateFormat('dd/MM/yyyy HH:mm').format(reservation.endTime)}',
-                                        style: TextStyle(fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: IconButton(
-                                    icon: Icon(Icons.cancel,
-                                        color: Colors.redAccent, size: 24),
-                                    onPressed: () {
-                                      _showNotificationForm(reservation.userId);
-                                      FirebaseFirestore.instance
-                                          .collection('reservation')
-                                          .doc(reservation.id)
-                                          .delete();
-
-                                      _deleteReservationFromPlace(reservation);
-                                    },
+                                    ],
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.local_parking_sharp,
+                                          size: 20, color: Colors.black),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          reservation.idPlace,
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.access_time,
+                                          size: 20, color: Colors.blue),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${DateFormat('dd/MM/yyyy HH:mm').format(reservation.startTime)}',
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.timer_off,
+                                          size: 20, color: Colors.red),
+                                      SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          '${DateFormat('dd/MM/yyyy HH:mm').format(reservation.endTime)}',
+                                          style: TextStyle(fontSize: 14),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Icon(Icons.info,
+                                          size: 20, color: Colors.black),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        reservation.etat,
+                                        style: TextStyle(fontSize: 14),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 8),
+                                  Align(
+                                    alignment: Alignment.bottomRight,
+                                    child: IconButton(
+                                      icon: Icon(Icons.cancel,
+                                          color: Colors.redAccent, size: 24),
+                                      onPressed: () {
+                                        _showNotificationForm(
+                                            reservation, reservation.userId);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
@@ -204,7 +223,7 @@ class _ReservationPageState extends State<reservationPage> {
     );
   }
 
-  void _showNotificationForm(String userId) {
+  void _showNotificationForm(Reservation reservation, String userId) {
     TextEditingController typeController = TextEditingController();
     TextEditingController descriptionController = TextEditingController();
     TextEditingController userIdController =
@@ -246,6 +265,10 @@ class _ReservationPageState extends State<reservationPage> {
                 String type = typeController.text;
                 String description = descriptionController.text;
                 _sendNotification(userId, type, description);
+                _updateReservationStatus(reservation);
+                setState(() {
+                  canceledReservations.add(reservation.id);
+                });
                 Navigator.of(context).pop();
               },
               child: Text('OK', style: TextStyle(color: Colors.teal)),
@@ -266,25 +289,11 @@ class _ReservationPageState extends State<reservationPage> {
     });
   }
 
-  Future<void> _deleteReservationFromPlace(Reservation reservation) async {
-    final idPlace = reservation.idPlace;
-    final placeDoc =
-        await FirebaseFirestore.instance.collection('place').doc(idPlace).get();
-
-    if (placeDoc.exists) {
-      final reservations = placeDoc.data()?['reservations'] ?? [];
-      final updatedReservations = reservations.where((res) {
-        final resDebut = (res['debut'] as Timestamp).toDate();
-        final resFin = (res['fin'] as Timestamp).toDate();
-        return !(resDebut == reservation.startTime &&
-            resFin == reservation.endTime);
-      }).toList();
-
-      await FirebaseFirestore.instance
-          .collection('place')
-          .doc(idPlace)
-          .update({'reservations': updatedReservations});
-    }
+  Future<void> _updateReservationStatus(Reservation reservation) async {
+    await FirebaseFirestore.instance
+        .collection('reservation')
+        .doc(reservation.id)
+        .update({'etat': 'Annulée'});
   }
 }
 
@@ -294,6 +303,7 @@ class Reservation {
   final DateTime startTime;
   final DateTime endTime;
   final String idPlace;
+  final String etat;
 
   Reservation({
     required this.id,
@@ -301,5 +311,18 @@ class Reservation {
     required this.startTime,
     required this.endTime,
     required this.idPlace,
+    required this.etat,
   });
+
+  factory Reservation.fromFirestore(DocumentSnapshot doc) {
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    return Reservation(
+      id: doc.id,
+      userId: data['userId'] ?? '',
+      startTime: (data['debut'] as Timestamp).toDate(),
+      endTime: (data['fin'] as Timestamp).toDate(),
+      idPlace: data['idPlace'] ?? '',
+      etat: data['etat'] ?? 'en cours',
+    );
+  }
 }

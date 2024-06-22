@@ -5,7 +5,10 @@ import 'package:intl/intl.dart';
 class ModifierReservationPage extends StatefulWidget {
   final DocumentSnapshot reservation;
 
-  ModifierReservationPage({required this.reservation});
+  ModifierReservationPage(
+      {required this.reservation,
+      required String reservationId,
+      required parkingId});
 
   @override
   _ModifierReservationPageState createState() =>

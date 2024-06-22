@@ -245,22 +245,46 @@ class _TicketPageState extends State<TicketPage> {
                             height: 80,
                             drawText: false,
                           ),
-                          SizedBox(height: 16.0),
-                          ElevatedButton(
+                          SizedBox(height: 24.0),
+                          ElevatedButton.icon(
+                            icon: Icon(Icons.payment, color: Colors.green),
+                            label: Text(
+                              'Payer maintenant',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => PaiementPage(
                                     userId: widget.userId,
+                                    prix: reservationData![
+                                        'prix'], // Passez le prix ici
                                   ),
                                 ),
                               );
                             },
-                            child: Text('Payer maintenant'),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.green,
+                              backgroundColor: Colors.white,
+                              side: BorderSide(color: Colors.green, width: 2),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 3,
+                            ),
                           ),
-                          SizedBox(height: 8.0),
-                          ElevatedButton(
+                          SizedBox(height: 16.0),
+                          ElevatedButton.icon(
+                            icon: Icon(Icons.local_parking, color: Colors.blue),
+                            label: Text(
+                              'Payer au parking',
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -269,7 +293,17 @@ class _TicketPageState extends State<TicketPage> {
                                 ),
                               );
                             },
-                            child: Text('Payer au niveau du parking'),
+                            style: ElevatedButton.styleFrom(
+                              foregroundColor: Colors.blue,
+                              backgroundColor: Colors.white,
+                              side: BorderSide(color: Colors.blue, width: 2),
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 12, horizontal: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 3,
+                            ),
                           ),
                         ],
                       ),
@@ -283,17 +317,26 @@ class _TicketPageState extends State<TicketPage> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(fontSize: 16.0),
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
           Expanded(
+            flex: 3,
             child: Text(
               value,
-              style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontSize: 16.0,
+                fontWeight: FontWeight.w400,
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],

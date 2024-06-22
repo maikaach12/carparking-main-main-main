@@ -1,3 +1,4 @@
+import 'package:carparking/pages/cote_user/mapPermission.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -84,7 +85,8 @@ class _SignUpDetailsPageState extends State<SignUpDetailsPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MapPage(userId: userCredential.user!.uid),
+            builder: (context) =>
+                LocationPermissionPage(userId: userCredential.user!.uid),
           ),
         );
       } catch (e) {

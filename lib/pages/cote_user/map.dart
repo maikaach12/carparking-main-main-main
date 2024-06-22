@@ -7,6 +7,7 @@ import 'package:carparking/pages/cote_user/reservation/reservation.dart';
 import 'package:carparking/pages/login_signup/firstPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
@@ -14,9 +15,9 @@ import 'dart:math' as math;
 
 class MapPage extends StatefulWidget {
   final String userId;
+  final bool showUserLocation;
 
-  MapPage({this.userId = ''});
-  @override
+  MapPage({this.userId = '', required this.showUserLocation});
   _MapPageState createState() => _MapPageState();
 }
 
@@ -27,7 +28,7 @@ class _MapPageState extends State<MapPage> {
   MapController _mapController = MapController();
   int _selectedIndex = 0;
   List<Marker> _markers = [];
-  LatLng _fixedLocation = LatLng(36.75333078055549, 3.4708591109601565);
+  LatLng _fixedLocation = LatLng(36.7516900469276, 3.469945612377954);
   List<LatLng> _routePoints = [];
   double _distance = 0.0;
   int _duration = 0;
@@ -127,9 +128,16 @@ class _MapPageState extends State<MapPage> {
         .doc(parkingId)
         .get();
 
+    final ratingDoc = await FirebaseFirestore.instance
+        .collection('ratings')
+        .doc(parkingId)
+        .get();
+
     if (parkingDoc.exists &&
         parkingDoc.data()!.containsKey('placesDisponible')) {
       int placesDisponible = parkingDoc.data()!['placesDisponible'];
+      double averageRating =
+          ratingDoc.exists ? ratingDoc.data()!['moyenne'] : 0.0;
 
       double distance =
           calculateDistance(placeLatLng.latitude, placeLatLng.longitude);
@@ -138,74 +146,179 @@ class _MapPageState extends State<MapPage> {
 
       int duration = calculateDuration(distance);
 
+      bool isPromotionActive = false;
+      String? promotionText;
+      DateTime now = DateTime.now();
+
+      if (parkingDoc.data()!.containsKey('promotion') &&
+          parkingDoc.data()!['promotion'] is Map) {
+        var promotion = parkingDoc.data()!['promotion'];
+
+        if (promotion['dateDebutPromotion'] != null &&
+            promotion['dateFinPromotion'] != null &&
+            promotion['remiseEnPourcentage'] != null) {
+          DateTime dateDebutPromotion =
+              (promotion['dateDebutPromotion'] as Timestamp).toDate();
+          DateTime dateFinPromotion =
+              (promotion['dateFinPromotion'] as Timestamp).toDate();
+
+          if (now.isAfter(dateDebutPromotion) &&
+              now.isBefore(dateFinPromotion)) {
+            isPromotionActive = true;
+            promotionText = 'Promo - ${promotion['remiseEnPourcentage']}%';
+          }
+        }
+      }
+
       showModalBottomSheet(
         context: context,
         builder: (context) {
           final double distanceInKm = distance / 1000;
-          final String address =
-              'Latitude: ${placeLatLng.latitude}, Longitude: ${placeLatLng.longitude}';
-
-          return Container(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  namePark,
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 8.0),
-                Text(address),
-                SizedBox(height: 16.0),
-                Row(
+          String imageFileName = parkingDoc.data()!['image'];
+          return Stack(
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 24.0,
-                      height: 24.0,
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.green,
-                      ),
-                      child: Center(
-                        child: Text(
-                          placesDisponible.toString(),
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        borderRadius: BorderRadius.circular(8.0),
+                        image: DecorationImage(
+                          image: AssetImage('lib/images/$imageFileName'),
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
-                    SizedBox(width: 8.0),
-                    Icon(Icons.location_on),
-                    SizedBox(width: 4.0),
-                    Text('${distanceInKm.toStringAsFixed(2)} km'),
-                    SizedBox(width: 16.0),
-                    Icon(Icons.directions_car),
-                    SizedBox(width: 4.0),
-                    Text('$duration minutes'),
+                    SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            namePark,
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: 8.0),
+                          Text(
+                            place,
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          SizedBox(height: 16.0),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  RatingBarIndicator(
+                                    rating: averageRating,
+                                    itemBuilder: (context, index) => Icon(
+                                      Icons.star,
+                                      color: Colors.amber,
+                                    ),
+                                    itemCount: 5,
+                                    itemSize: 20.0,
+                                    direction: Axis.horizontal,
+                                  ),
+                                  SizedBox(width: 8.0),
+                                  Text('${averageRating.toStringAsFixed(1)}'),
+                                ],
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 8.0),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Icons.navigation,
+                                      color: Colors.blueAccent),
+                                  SizedBox(width: 4.0),
+                                  Text('${distanceInKm.toStringAsFixed(2)} km'),
+                                  SizedBox(width: 16.0),
+                                  Icon(Icons.access_time,
+                                      color: Colors.blueAccent),
+                                  SizedBox(width: 4.0),
+                                  Text('$duration min'),
+                                  SizedBox(width: 8.0),
+                                  Container(
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.event_available,
+                                            color: Colors.blueAccent),
+                                        SizedBox(width: 4.0),
+                                        Text(
+                                          '$placesDisponible',
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 16.0),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ReservationPage(
+                                      parkingId: parkingId,
+                                    ),
+                                  ),
+                                );
+                              },
+                              child: Text(
+                                'Réserver',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueAccent,
+                                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(height: 16.0),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ReservationPage(
-                          parkingId: parkingId,
-                        ),
+              ),
+              if (isPromotionActive)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                    child: Text(
+                      promotionText!,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  },
-                  child: Text('Réserver'),
+                    ),
+                  ),
                 ),
-              ],
-            ),
+            ],
           );
         },
       );
@@ -313,13 +426,6 @@ class _MapPageState extends State<MapPage> {
         automaticallyImplyLeading: false,
         backgroundColor: Colors.white,
         elevation: 0,
-        title: Text(
-          'Car Parking',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.logout, color: Colors.black),
@@ -432,23 +538,25 @@ class _MapPageState extends State<MapPage> {
                       urlTemplate:
                           'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
                     ),
-                    MarkerLayer(
-                      markers: _markers,
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          width: 80,
-                          height: 80,
-                          point: _fixedLocation,
-                          child: Icon(
-                            Icons.my_location,
-                            color: Colors.red,
-                            size: 36,
+                    if (widget.showUserLocation)
+                      MarkerLayer(
+                        markers: _markers,
+                      ),
+                    if (widget.showUserLocation)
+                      MarkerLayer(
+                        markers: [
+                          Marker(
+                            width: 80,
+                            height: 80,
+                            point: _fixedLocation,
+                            child: Icon(
+                              Icons.my_location,
+                              color: Colors.red,
+                              size: 36,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
                     if (_routeLayer != null) _routeLayer!,
                   ],
                 ),

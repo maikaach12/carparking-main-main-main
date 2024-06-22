@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:carparking/pages/cote_admin/AdminDashboardPage.dart';
 import 'package:carparking/pages/cote_user/map.dart';
+import 'package:carparking/pages/cote_user/mapPermission.dart';
 import 'package:carparking/pages/cote_user/profilepage.dart';
 import 'package:carparking/pages/login_signup/sign_up.dart';
 import 'package:flutter/material.dart';
@@ -55,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
       if (!active) {
         showErrorMessage(
           context,
-          "Your account has been deactivated by the admin.",
+          "Votre compte a été désactivé par l'administrateur.",
         );
         return;
       }
@@ -79,9 +80,7 @@ class _LoginPageState extends State<LoginPage> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => MapPage(
-              userId: userId,
-            ),
+            builder: (context) => LocationPermissionPage(userId: userId),
           ),
         );
       } else {
