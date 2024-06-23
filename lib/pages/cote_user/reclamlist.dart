@@ -41,6 +41,10 @@ class _ReclamationListPageState extends State<ReclamationListPage> {
               Map<String, dynamic> data =
                   document.data() as Map<String, dynamic>;
               String status = data['statut'] ?? 'en attente';
+
+              // Debugging statement
+              print('Réclamation ${document.id} statut: $status');
+
               return Container(
                 margin: EdgeInsets.only(bottom: 16.0),
                 padding: EdgeInsets.all(16.0),
@@ -186,32 +190,5 @@ class _ReclamationListPageState extends State<ReclamationListPage> {
     final String formattedTime =
         "${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}";
     return formattedTime;
-  }
-}
-
-class ModifierReclamationPage extends StatelessWidget {
-  final String userId;
-  final String reclamationId;
-  final String typeProblem;
-  final String description;
-
-  ModifierReclamationPage({
-    required this.userId,
-    required this.reclamationId,
-    required this.typeProblem,
-    required this.description,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    // Page pour modifier la réclamation (à implémenter)
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Modifier Réclamation'),
-      ),
-      body: Center(
-        child: Text('Modifier la réclamation ici'),
-      ),
-    );
   }
 }

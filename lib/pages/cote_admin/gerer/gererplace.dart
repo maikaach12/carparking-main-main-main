@@ -206,15 +206,53 @@ class _GererPlacePageState extends State<GererPlacePage> {
                                     IconButton(
                                       icon:
                                           Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () {
+                                      onPressed: () async {
+                                        List<String> reservationDetails =
+                                            await _getReservationDetails(
+                                                document.id);
                                         showDialog(
                                           context: context,
                                           builder: (BuildContext context) {
                                             return AlertDialog(
-                                              title: Text('Confirmation'),
-                                              content: Text(
-                                                  'Êtes-vous sûr de vouloir supprimer cette place?'),
-                                              backgroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(15.0),
+                                              ),
+                                              title: Row(
+                                                children: [
+                                                  Icon(Icons.warning,
+                                                      color: Colors.red),
+                                                  SizedBox(width: 8),
+                                                  Text('Confirmation',
+                                                      style: TextStyle(
+                                                          color: Colors.red)),
+                                                ],
+                                              ),
+                                              content: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                      'Êtes-vous sûr de vouloir supprimer cette place?',
+                                                      style: TextStyle(
+                                                          fontSize: 16)),
+                                                  SizedBox(height: 16),
+                                                  Text(
+                                                      'Les réservations suivantes seront également supprimées:',
+                                                      style: TextStyle(
+                                                          fontSize: 14)),
+                                                  SizedBox(height: 8),
+                                                  ...reservationDetails
+                                                      .map((detail) => Text(
+                                                          detail,
+                                                          style: TextStyle(
+                                                              fontSize: 14,
+                                                              color:
+                                                                  Colors.grey)))
+                                                      .toList(),
+                                                ],
+                                              ),
                                               actions: [
                                                 TextButton(
                                                   onPressed: () {
@@ -224,14 +262,18 @@ class _GererPlacePageState extends State<GererPlacePage> {
                                                       style: TextStyle(
                                                           color: Colors.blue)),
                                                 ),
-                                                TextButton(
+                                                ElevatedButton(
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.red,
+                                                  ),
                                                   onPressed: () {
                                                     _deletePlace(document);
                                                     Navigator.of(context).pop();
                                                   },
                                                   child: Text('Supprimer',
                                                       style: TextStyle(
-                                                          color: Colors.blue)),
+                                                          color: Colors.white)),
                                                 ),
                                               ],
                                             );
@@ -272,6 +314,21 @@ class _GererPlacePageState extends State<GererPlacePage> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
+  }
+
+  Future<List<String>> _getReservationDetails(String placeId) async {
+    QuerySnapshot reservations = await _firestore
+        .collection('reservation')
+        .where('idPlace', isEqualTo: placeId)
+        .get();
+
+    List<String> reservationDetails = [];
+    for (DocumentSnapshot reservation in reservations.docs) {
+      // Ajoutez ici les détails spécifiques de la réservation que vous souhaitez afficher
+      reservationDetails.add('Réservation ID: ${reservation.id}');
+    }
+
+    return reservationDetails;
   }
 
   Future<void> _deletePlace(DocumentSnapshot document) async {
