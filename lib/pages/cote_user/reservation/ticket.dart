@@ -259,8 +259,8 @@ class _TicketPageState extends State<TicketPage> {
                                 MaterialPageRoute(
                                   builder: (context) => PaiementPage(
                                     userId: widget.userId,
-                                    prix: reservationData![
-                                        'prix'], // Passez le prix ici
+                                    prix: reservationData!['prix']
+                                        .toDouble(), // Convert to double
                                   ),
                                 ),
                               );

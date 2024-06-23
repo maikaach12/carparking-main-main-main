@@ -162,8 +162,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   },
                   onStatisticsTap: () =>
                       _navigateToReservationFrequencyPage(context),
-                  onNotificationTap:
-                      _showNotificationForm, // Add notification callback
+                  onNotificationTap: _showNotificationForm,
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -207,13 +206,13 @@ class Navbar extends StatelessWidget {
   final VoidCallback onMenuTap;
   final VoidCallback onHomeTap;
   final VoidCallback onStatisticsTap;
-  final VoidCallback onNotificationTap; // New callback for notification
+  final VoidCallback onNotificationTap;
 
   Navbar({
     required this.onMenuTap,
     required this.onHomeTap,
     required this.onStatisticsTap,
-    required this.onNotificationTap, // Add new parameter
+    required this.onNotificationTap,
   });
 
   @override
@@ -237,108 +236,10 @@ class Navbar extends StatelessWidget {
             icon: Icon(Icons.bar_chart),
           ),
           IconButton(
-            onPressed: onNotificationTap, // Add notification icon
+            onPressed: onNotificationTap,
             icon: Icon(Icons.notifications),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class GererParkingPage extends StatefulWidget {
-  @override
-  _GererParkingPageState createState() => _GererParkingPageState();
-}
-
-class _GererParkingPageState extends State<GererParkingPage> {
-  Future<void> _ajouterPromotion(String parkingId) async {
-    // Ouvrir une boîte de dialogue ou une page séparée pour saisir les détails de la promotion
-    final remiseEnPourcentage = await showDialog<double>(
-      context: context,
-      builder: (context) => PromotionDialog(
-        parkingId: parkingId,
-      ),
-    );
-
-    if (remiseEnPourcentage != null) {
-      final dateDebutPromotion = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2100),
-      );
-
-      if (dateDebutPromotion != null) {
-        final dateFinPromotion = await showDatePicker(
-          context: context,
-          initialDate: dateDebutPromotion
-              .add(Duration(days: 30)), // Durée par défaut de 30 jours
-          firstDate: dateDebutPromotion,
-          lastDate: DateTime(2100),
-        );
-
-        if (dateFinPromotion != null) {
-          // Ajouter la promotion au document de parking
-          await FirebaseFirestore.instance
-              .collection('parking')
-              .doc(parkingId)
-              .update({
-            'promotion': {
-              'remiseEnPourcentage': remiseEnPourcentage,
-              'dateDebutPromotion': Timestamp.fromDate(dateDebutPromotion),
-              'dateFinPromotion': Timestamp.fromDate(dateFinPromotion),
-            },
-          });
-        }
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Gérer Parking'),
-      ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('parking').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Text('Une erreur s\'est produite');
-          }
-
-          if (!snapshot.hasData) {
-            return CircularProgressIndicator();
-          }
-
-          return ListView.builder(
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
-              final parkingDoc = snapshot.data!.docs[index];
-              final parkingId = parkingDoc.id;
-
-              return ListTile(
-                title: Text(parkingDoc['nom']),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        // Code pour modifier le parking
-                      },
-                      icon: Icon(Icons.edit),
-                    ),
-                    IconButton(
-                      onPressed: () => _ajouterPromotion(parkingId),
-                      icon: Icon(Icons.local_offer),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }
@@ -357,11 +258,9 @@ class _NotificationFormState extends State<NotificationForm> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
-      // Fetch all users from the 'users' collection
       final usersSnapshot =
           await FirebaseFirestore.instance.collection('users').get();
 
-      // Create a notification for each user
       for (var userDoc in usersSnapshot.docs) {
         await FirebaseFirestore.instance.collection('notifications').add({
           'type': 'Rappel',
@@ -372,7 +271,6 @@ class _NotificationFormState extends State<NotificationForm> {
         });
       }
 
-      // Close the form
       Navigator.of(context).pop();
     }
   }

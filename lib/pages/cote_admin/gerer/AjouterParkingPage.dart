@@ -12,7 +12,8 @@ class _AjouterParkingPageState extends State<AjouterParkingPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late String _nom, _place, _latitude, _longitude, _imageName;
-  late int _capacite, _prixParTranche, _prixParTrancheHandi;
+  late int _prixParTranche, _prixParTrancheHandi;
+  final int _capacite = 0; // Setting capacite to 0
 
   @override
   Widget build(BuildContext context) {
@@ -100,21 +101,6 @@ class _AjouterParkingPageState extends State<AjouterParkingPage> {
                             return null;
                           },
                           onSaved: (value) => _place = value!,
-                        ),
-                        SizedBox(height: 10),
-                        TextFormField(
-                          decoration: InputDecoration(
-                            labelText: 'Capacité',
-                            prefixIcon: Icon(Icons.directions_car),
-                          ),
-                          keyboardType: TextInputType.number,
-                          validator: (value) {
-                            if (value!.isEmpty) {
-                              return 'Veuillez entrer la capacité';
-                            }
-                            return null;
-                          },
-                          onSaved: (value) => _capacite = int.parse(value!),
                         ),
                         SizedBox(height: 10),
                         TextFormField(

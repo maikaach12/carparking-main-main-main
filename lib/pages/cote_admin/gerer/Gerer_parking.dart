@@ -73,6 +73,43 @@ class _GererParkingPageState extends State<GererParkingPage> {
     );
   }
 
+  Future<void> _ajouterPromotion(String parkingId) async {
+    final remiseEnPourcentage = await showDialog<double>(
+      context: context,
+      builder: (context) => PromotionDialog(
+        parkingId: parkingId,
+      ),
+    );
+
+    if (remiseEnPourcentage != null) {
+      final dateDebutPromotion = await showDatePicker(
+        context: context,
+        initialDate: DateTime.now(),
+        firstDate: DateTime.now(),
+        lastDate: DateTime(2100),
+      );
+
+      if (dateDebutPromotion != null) {
+        final dateFinPromotion = await showDatePicker(
+          context: context,
+          initialDate: dateDebutPromotion.add(Duration(days: 30)),
+          firstDate: dateDebutPromotion,
+          lastDate: DateTime(2100),
+        );
+
+        if (dateFinPromotion != null) {
+          await _firestore.collection('parking').doc(parkingId).update({
+            'promotion': {
+              'remiseEnPourcentage': remiseEnPourcentage,
+              'dateDebutPromotion': Timestamp.fromDate(dateDebutPromotion),
+              'dateFinPromotion': Timestamp.fromDate(dateFinPromotion),
+            },
+          });
+        }
+      }
+    }
+  }
+
   void _showDeleteDialog(BuildContext context, DocumentSnapshot document) {
     showDialog(
       context: context,
@@ -173,7 +210,7 @@ class _GererParkingPageState extends State<GererParkingPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(15.0),
                         ),
-                        elevation: 0, // Suppression de l'ombre
+                        elevation: 0,
                         child: ListTile(
                           title: Text(
                             document['nom'],
@@ -247,6 +284,13 @@ class _GererParkingPageState extends State<GererParkingPage> {
                                 },
                               ),
                               IconButton(
+                                icon: Icon(Icons.local_offer,
+                                    color: Colors.green),
+                                onPressed: () {
+                                  _ajouterPromotion(document.id);
+                                },
+                              ),
+                              IconButton(
                                 icon: Icon(Icons.delete, color: Colors.red),
                                 onPressed: () {
                                   _showDeleteDialog(context, document);
@@ -281,6 +325,42 @@ class _GererParkingPageState extends State<GererParkingPage> {
         backgroundColor: Colors.white,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class PromotionDialog extends StatelessWidget {
+  final String parkingId;
+
+  PromotionDialog({required this.parkingId});
+
+  @override
+  Widget build(BuildContext context) {
+    final TextEditingController _promotionController = TextEditingController();
+
+    return AlertDialog(
+      title: Text('Ajouter une promotion'),
+      content: TextField(
+        controller: _promotionController,
+        decoration: InputDecoration(hintText: "Remise en pourcentage"),
+        keyboardType: TextInputType.number,
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: Text('Annuler'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: Text('Ajouter'),
+          onPressed: () {
+            final remiseEnPourcentage =
+                double.tryParse(_promotionController.text);
+            Navigator.of(context).pop(remiseEnPourcentage);
+          },
+        ),
+      ],
     );
   }
 }

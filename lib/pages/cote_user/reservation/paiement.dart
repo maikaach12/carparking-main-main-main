@@ -124,38 +124,29 @@ class _PaiementPageState extends State<PaiementPage> {
                       SizedBox(height: 20),
                       _buildSummary(),
                       SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _submitForm,
-                        child: Text('Valider',
-                            style: GoogleFonts.lato(fontSize: 18)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
+                      GestureDetector(
+                        onTap: _submitForm,
+                        child: AnimatedContainer(
+                          duration: Duration(milliseconds: 300),
                           padding: EdgeInsets.symmetric(
-                              horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.0),
+                            horizontal: 40.0,
+                            vertical: 18.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.blueAccent.withOpacity(0.8),
+                            borderRadius: BorderRadius.circular(30.0),
+                          ),
+                          child: Text(
+                            'Valider',
+                            style: GoogleFonts.montserrat(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
                     ],
-                  ),
-                ),
-                SizedBox(height: 20),
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Handle continue shopping
-                    },
-                    child: Text('Continuer vos achats',
-                        style: GoogleFonts.lato(fontSize: 18)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0),
-                      ),
-                    ),
                   ),
                 ),
               ],
