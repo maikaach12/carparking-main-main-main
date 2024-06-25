@@ -41,49 +41,49 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDxrlJARdIMK4B8rYTXGmoNP2Fj33W_Po0',
-    appId: '1:709532513866:web:1da3d6f471e59e209998b3',
-    messagingSenderId: '709532513866',
-    projectId: 'carparkingeight',
-    authDomain: 'carparkingeight.firebaseapp.com',
-    storageBucket: 'carparkingeight.appspot.com',
-    measurementId: 'G-2CBVDR99BN',
+    apiKey: 'AIzaSyBNf5j4FORoXK3CZ2zFZskLvieSO_4zOo0',
+    appId: '1:437756517706:web:0427dae0a50da740c675b3',
+    messagingSenderId: '437756517706',
+    projectId: 'parkingseven-13555',
+    authDomain: 'parkingseven-13555.firebaseapp.com',
+    storageBucket: 'parkingseven-13555.appspot.com',
+    measurementId: 'G-S5F6SGDQZ4',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB0dsE3M_nZU81vRiNSrVwbk6eSw4BDJOM',
-    appId: '1:709532513866:android:15174d7e912c9f879998b3',
-    messagingSenderId: '709532513866',
-    projectId: 'carparkingeight',
-    storageBucket: 'carparkingeight.appspot.com',
+    apiKey: 'AIzaSyDBhH9gpKPLF9hlrYHnFdiDRNQm8SWnugU',
+    appId: '1:437756517706:android:39731dc9597c7aa0c675b3',
+    messagingSenderId: '437756517706',
+    projectId: 'parkingseven-13555',
+    storageBucket: 'parkingseven-13555.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAM-FdM2YNsAuEmK4vb-NESl8ThbXuIjBw',
-    appId: '1:709532513866:ios:8de53346d36efbd99998b3',
-    messagingSenderId: '709532513866',
-    projectId: 'carparkingeight',
-    storageBucket: 'carparkingeight.appspot.com',
+    apiKey: 'AIzaSyCBeeW30P1XGNaiYnbQlZYD2p9XTI2YNzU',
+    appId: '1:437756517706:ios:fcb66c72c3824ffdc675b3',
+    messagingSenderId: '437756517706',
+    projectId: 'parkingseven-13555',
+    storageBucket: 'parkingseven-13555.appspot.com',
     iosBundleId: 'com.example.carparking',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAM-FdM2YNsAuEmK4vb-NESl8ThbXuIjBw',
-    appId: '1:709532513866:ios:8de53346d36efbd99998b3',
-    messagingSenderId: '709532513866',
-    projectId: 'carparkingeight',
-    storageBucket: 'carparkingeight.appspot.com',
+    apiKey: 'AIzaSyCBeeW30P1XGNaiYnbQlZYD2p9XTI2YNzU',
+    appId: '1:437756517706:ios:fcb66c72c3824ffdc675b3',
+    messagingSenderId: '437756517706',
+    projectId: 'parkingseven-13555',
+    storageBucket: 'parkingseven-13555.appspot.com',
     iosBundleId: 'com.example.carparking',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyDxrlJARdIMK4B8rYTXGmoNP2Fj33W_Po0',
-    appId: '1:709532513866:web:2a9551e6ba5baafd9998b3',
-    messagingSenderId: '709532513866',
-    projectId: 'carparkingeight',
-    authDomain: 'carparkingeight.firebaseapp.com',
-    storageBucket: 'carparkingeight.appspot.com',
-    measurementId: 'G-3Q4GY8JXLJ',
+    apiKey: 'AIzaSyBNf5j4FORoXK3CZ2zFZskLvieSO_4zOo0',
+    appId: '1:437756517706:web:8afa9a0dc0154f45c675b3',
+    messagingSenderId: '437756517706',
+    projectId: 'parkingseven-13555',
+    authDomain: 'parkingseven-13555.firebaseapp.com',
+    storageBucket: 'parkingseven-13555.appspot.com',
+    measurementId: 'G-DH95ZNRX36',
   );
 
 }

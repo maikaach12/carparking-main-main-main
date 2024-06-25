@@ -1,7 +1,8 @@
-import 'package:carparking/pages/cote_admin/promotion.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:intl/intl.dart';
+import 'package:carparking/pages/cote_admin/stat/promouser.dart'; // Importez le fichier promotion.dart si nécessaire
 
 class TopUserWidget extends StatelessWidget {
   const TopUserWidget({Key? key}) : super(key: key);
@@ -121,7 +122,7 @@ class TopUserWidget extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '$topUserReservations Reservations',
+                          '$topUserReservations Réservations',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.white70,
@@ -130,8 +131,9 @@ class TopUserWidget extends StatelessWidget {
                         TextButton(
                           onPressed: () => showDialog(
                             context: context,
-                            builder: (BuildContext context) => PromotionDialog(
-                              parkingId: topUserId,
+                            builder: (BuildContext context) =>
+                                PromotionuserDialog(
+                              userId: topUserId,
                             ),
                           ),
                           child: Text('Appliquer promotion'),

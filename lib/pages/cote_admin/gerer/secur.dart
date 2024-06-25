@@ -32,7 +32,6 @@ class _ReclamationDetailsSecurityPageState
     userId = widget.reclamationData['userId'];
     _fetchUserData();
 
-    // Initialize predefined messages based on the description
     if (widget.reclamationData['description'] ==
         "problème de vols dans le parking") {
       predefinedMessages = [
@@ -60,12 +59,44 @@ class _ReclamationDetailsSecurityPageState
     }
   }
 
-  void _sendNotification(String userId, String message) {
+  void _sendNotification(String userId) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
+      'type': 'Réclamation',
+      'description':
+          'Votre réclamation a été résolue. Veuillez vérifier votre page "Mes réclamations" pour plus de détails.',
+    });
+  }
+
+  Future<void> _updateReclamation(String reclamationId, String message) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('reclamations')
+          .doc(reclamationId)
+          .update({
+        'response': message,
+        'responseTimestamp': Timestamp.now(),
+      });
+    } catch (error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
+    }
+  }
+
+  void _closeReclamation() {
+    FirebaseFirestore.instance
+        .collection('reclamations')
+        .doc(widget.reclamationId)
+        .update({
+      'status': 'terminée',
+      'response': reponse,
+      'responseTimestamp': Timestamp.now(),
+    }).then((_) {
+      _sendNotification(widget.reclamationData['userId']);
+      Navigator.pop(context);
+    }).catchError((error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
     });
   }
 
@@ -119,14 +150,6 @@ class _ReclamationDetailsSecurityPageState
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.send),
-            onPressed: () {
-              if (reponse.isNotEmpty) {
-                _sendNotification(widget.reclamationData['userId'], reponse);
-              }
-            },
-          ),
           IconButton(
             icon: Icon(Icons.download),
             onPressed: _downloadPDF,
@@ -259,15 +282,7 @@ class _ReclamationDetailsSecurityPageState
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: () {
-                  FirebaseFirestore.instance
-                      .collection('reclamations')
-                      .doc(widget.reclamationId)
-                      .update({
-                    'status': 'terminée',
-                  });
-                  Navigator.pop(context);
-                },
+                onPressed: _closeReclamation,
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
@@ -286,32 +301,32 @@ class _ReclamationDetailsSecurityPageState
   Widget _buildInfoCard(String title, String subtitle,
       {required IconData icon}) {
     return Card(
-      elevation: 2.0, // Ajoute une légère ombre pour un effet de relief
+      elevation: 2.0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0), // Bords arrondis
+        borderRadius: BorderRadius.circular(8.0),
       ),
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         leading: Icon(
           icon,
-          color: Colors.blue, // Couleur de l'icône
+          color: Colors.blue,
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontWeight: FontWeight.bold, // Titre en gras
-            fontSize: 16.0, // Taille de police du titre
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            fontSize: 14.0, // Taille de police du sous-titre
+            fontSize: 14.0,
           ),
         ),
         contentPadding: EdgeInsets.symmetric(
-          horizontal: 16.0, // Espacement horizontal du contenu
-          vertical: 12.0, // Espacement vertical du contenu
+          horizontal: 16.0,
+          vertical: 12.0,
         ),
       ),
     );

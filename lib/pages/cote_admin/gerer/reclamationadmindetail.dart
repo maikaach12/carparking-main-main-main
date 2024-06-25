@@ -16,8 +16,10 @@ class ReclamationDetailsPage extends StatefulWidget {
 
 class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
   String reponse = '';
+
   TextEditingController typeController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
+
   String selectedUserId = '';
   String? userId; // userId récupéré à partir du matricule
 
@@ -53,7 +55,6 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
 
       if (userSnapshot.exists) {
         int nbrSignal = userSnapshot.get('nbrSignal') ?? 0;
-
         nbrSignal++;
 
         await userSnapshot.reference.update({'nbrSignal': nbrSignal});
@@ -135,6 +136,8 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
                         String description = descriptionController.text;
 
                         _sendNotification(selectedUserId, type, description);
+                        Navigator.pop(
+                            context); // Ferme le bottom sheet après envoi
                       }
                     : null,
                 child: Text('Envoyer une notification'),

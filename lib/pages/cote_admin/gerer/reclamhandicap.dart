@@ -49,12 +49,25 @@ class _ReclamationDetailsHandicapPageState
     }
   }
 
+  Future<void> _updateReclamation(String reclamationId, String message) async {
+    await FirebaseFirestore.instance
+        .collection('reclamations')
+        .doc(reclamationId)
+        .update({
+      'response': message,
+      'responseTimestamp': Timestamp.now(),
+    });
+
+    _sendNotification(widget.reclamationData['userId'], message);
+  }
+
   void _sendNotification(String userId, String message) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
       'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
+      'type': 'Réclamation',
     });
   }
 
@@ -102,7 +115,7 @@ class _ReclamationDetailsHandicapPageState
             icon: Icon(Icons.send),
             onPressed: () {
               if (reponse.isNotEmpty) {
-                _sendNotification(widget.reclamationData['userId'], reponse);
+                _updateReclamation(widget.reclamationId, reponse);
               }
             },
           ),
@@ -210,6 +223,7 @@ class _ReclamationDetailsHandicapPageState
               SizedBox(height: 16.0),
               ElevatedButton(
                 onPressed: () {
+                  _updateReclamation(widget.reclamationId, reponse);
                   FirebaseFirestore.instance
                       .collection('reclamations')
                       .doc(widget.reclamationId)
@@ -236,32 +250,32 @@ class _ReclamationDetailsHandicapPageState
   Widget _buildInfoCard(String title, String subtitle,
       {required IconData icon}) {
     return Card(
-      elevation: 2.0, // Ajoute une légère ombre pour un effet de relief
+      elevation: 2.0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.0), // Bords arrondis
+        borderRadius: BorderRadius.circular(8.0),
       ),
       margin: EdgeInsets.symmetric(vertical: 8.0),
       child: ListTile(
         leading: Icon(
           icon,
-          color: Colors.blue, // Couleur de l'icône
+          color: Colors.blue,
         ),
         title: Text(
           title,
           style: TextStyle(
-            fontWeight: FontWeight.bold, // Titre en gras
-            fontSize: 16.0, // Taille de police du titre
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
           ),
         ),
         subtitle: Text(
           subtitle,
           style: TextStyle(
-            fontSize: 14.0, // Taille de police du sous-titre
+            fontSize: 14.0,
           ),
         ),
         contentPadding: EdgeInsets.symmetric(
-          horizontal: 16.0, // Espacement horizontal du contenu
-          vertical: 12.0, // Espacement vertical du contenu
+          horizontal: 16.0,
+          vertical: 12.0,
         ),
       ),
     );

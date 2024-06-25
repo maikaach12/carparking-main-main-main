@@ -40,10 +40,7 @@ class _ReclamationListPageState extends State<ReclamationListPage> {
               DocumentSnapshot document = snapshot.data!.docs[index];
               Map<String, dynamic> data =
                   document.data() as Map<String, dynamic>;
-              String status = data['statut'] ?? 'en attente';
-
-              // Debugging statement
-              print('Réclamation ${document.id} statut: $status');
+              String status = data['status'] ?? 'en attente';
 
               return Container(
                 margin: EdgeInsets.only(bottom: 16.0),
@@ -108,11 +105,6 @@ class _ReclamationListPageState extends State<ReclamationListPage> {
                                             CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          Text('IdPlace: ${data['idPlace']}'),
-                                          Text(
-                                              'Matricule: ${data['matricule']}'),
-                                          Text(
-                                              'ReservationId: ${data['reservationId']}'),
                                           Row(
                                             children: [
                                               Text('Timestamp: '),
@@ -125,6 +117,16 @@ class _ReclamationListPageState extends State<ReclamationListPage> {
                                               ),
                                             ],
                                           ),
+                                          if (data.containsKey('response'))
+                                            SizedBox(height: 8.0),
+                                          if (data.containsKey('response'))
+                                            Text(
+                                              'Réponse: ${data['response']}',
+                                              style: TextStyle(
+                                                fontSize: 16.0,
+                                                color: Colors.green[700],
+                                              ),
+                                            ),
                                         ],
                                       ),
                                       actions: <Widget>[

@@ -16,8 +16,7 @@ class _PromotionDialogState extends State<PromotionDialog> {
   double _remiseEnPourcentage = 0.0;
   DateTime? _dateDebutPromotion;
   DateTime? _dateFinPromotion;
-  bool _isSubmitting =
-      false; // Ajouter un booléen pour suivre l'état de soumission
+  bool _isSubmitting = false;
 
   Future<DateTime?> _showDateTimePicker(
       BuildContext context, DateTime? initialDate) async {
@@ -48,42 +47,6 @@ class _PromotionDialogState extends State<PromotionDialog> {
     return null;
   }
 
-  Future<void> _addNotification() async {
-    final notification = {
-      'type': 'Offre',
-      'description':
-          'Ne manquez pas nos offres exceptionnelles ! Profitez dès maintenant de nos promotions exclusives valables jusqu\'au ${DateFormat('dd/MM/yyyy').format(_dateFinPromotion!)}',
-      'isRead': false,
-      'timestamp': Timestamp.now(),
-    };
-
-    try {
-      QuerySnapshot usersSnapshot =
-          await FirebaseFirestore.instance.collection('users').get();
-
-      for (var userDoc in usersSnapshot.docs) {
-        final existingNotifications = await FirebaseFirestore.instance
-            .collection('notifications')
-            .where('userId', isEqualTo: userDoc.id)
-            .where('description', isEqualTo: notification['description'])
-            .get();
-
-        print(
-            'Utilisateur: ${userDoc.id}, Notifications existantes: ${existingNotifications.docs.length}');
-
-        if (existingNotifications.docs.isEmpty) {
-          await FirebaseFirestore.instance.collection('notifications').add({
-            ...notification,
-            'userId': userDoc.id,
-          });
-          print('Notification ajoutée pour l\'utilisateur: ${userDoc.id}');
-        }
-      }
-    } catch (e) {
-      print('Erreur lors de l\'ajout de la notification: $e');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Dialog(
@@ -97,68 +60,76 @@ class _PromotionDialogState extends State<PromotionDialog> {
   }
 
   Widget contentBox(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        shape: BoxShape.rectangle,
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black26,
-            blurRadius: 10.0,
-            offset: Offset(0.0, 10.0),
-          ),
-        ],
-      ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildCouponCard(),
-            SizedBox(height: 20),
-            _buildDateTimeSelector(
-              'Date et heure de début',
-              _dateDebutPromotion,
-              (selectedDateTime) {
-                setState(() {
-                  _dateDebutPromotion = selectedDateTime;
-                });
-              },
-            ),
-            SizedBox(height: 20),
-            _buildDateTimeSelector(
-              'Date et heure de fin',
-              _dateFinPromotion,
-              (selectedDateTime) {
-                setState(() {
-                  _dateFinPromotion = selectedDateTime;
-                });
-              },
-            ),
-            SizedBox(height: 30),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text('Annuler'),
-                ),
-                ElevatedButton(
-                  onPressed: _submitPromotion,
-                  child: Text('Valider'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color.fromARGB(255, 124, 178, 202),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  ),
-                ),
-              ],
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return SingleChildScrollView(
+      child: Container(
+        padding: EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 10.0,
+              offset: Offset(0.0, 10.0),
             ),
           ],
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildCouponCard(),
+              SizedBox(height: 20),
+              _buildDateTimeSelector(
+                'Date et heure de début',
+                _dateDebutPromotion,
+                (selectedDateTime) {
+                  setState(() {
+                    _dateDebutPromotion = selectedDateTime;
+                  });
+                },
+              ),
+              SizedBox(height: 20),
+              _buildDateTimeSelector(
+                'Date et heure de fin',
+                _dateFinPromotion,
+                (selectedDateTime) {
+                  setState(() {
+                    _dateFinPromotion = selectedDateTime;
+                  });
+                },
+              ),
+              SizedBox(height: 30),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Annuler'),
+                  ),
+                  ElevatedButton(
+                    onPressed: _submitPromotion,
+                    child: Text('Valider'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color.fromARGB(255, 124, 178, 202),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(
+                  height:
+                      screenHeight * 0.1), // Espacement supplémentaire en bas
+            ],
+          ),
         ),
       ),
     );
@@ -265,15 +236,46 @@ class _PromotionDialogState extends State<PromotionDialog> {
         'dateDebutPromotion': Timestamp.fromDate(_dateDebutPromotion!),
         'dateFinPromotion': Timestamp.fromDate(_dateFinPromotion!),
       };
-      await FirebaseFirestore.instance
-          .collection('parking')
-          .doc(widget.parkingId)
-          .update({'promotion': promotion});
-      await _addNotification();
-      setState(() {
-        _isSubmitting = false;
-      });
-      Navigator.pop(context);
+      try {
+        await FirebaseFirestore.instance
+            .collection('parking')
+            .doc(widget.parkingId)
+            .update({'promotion': promotion});
+
+        // Envoi de notification à tous les utilisateurs
+        final users =
+            await FirebaseFirestore.instance.collection('users').get();
+        final dateFinPromotionFormatted =
+            DateFormat('dd/MM/yyyy HH:mm').format(_dateFinPromotion!);
+        final notificationDescription =
+            "Ne manquez pas nos offres exceptionnelles ! Profitez dès maintenant de nos promotions exclusives valables jusqu'au $dateFinPromotionFormatted";
+
+        for (final userDoc in users.docs) {
+          await FirebaseFirestore.instance.collection('notifications').add({
+            'timestamp': Timestamp.now(),
+            'isRead': false,
+            'description': notificationDescription,
+            'type': 'Offre',
+            'userId': userDoc.id,
+          });
+        }
+
+        await _addNotification();
+        setState(() {
+          _isSubmitting = false;
+        });
+        Navigator.pop(context);
+      } catch (e) {
+        print('Erreur lors de la validation de la promotion: $e');
+        setState(() {
+          _isSubmitting = false;
+        });
+        // Afficher un message d'erreur à l'utilisateur si nécessaire
+      }
     }
+  }
+
+  Future<void> _addNotification() async {
+    // Vous pouvez implémenter la logique d'ajout de notification ici si nécessaire
   }
 }

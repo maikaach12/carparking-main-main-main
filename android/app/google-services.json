@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "709532513866",
-    "project_id": "carparkingeight",
-    "storage_bucket": "carparkingeight.appspot.com"
+    "project_number": "437756517706",
+    "project_id": "parkingseven-13555",
+    "storage_bucket": "parkingseven-13555.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:709532513866:android:15174d7e912c9f879998b3",
+        "mobilesdk_app_id": "1:437756517706:android:39731dc9597c7aa0c675b3",
         "android_client_info": {
           "package_name": "com.example.carparking"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB0dsE3M_nZU81vRiNSrVwbk6eSw4BDJOM"
+          "current_key": "AIzaSyDBhH9gpKPLF9hlrYHnFdiDRNQm8SWnugU"
         }
       ],
       "services": {

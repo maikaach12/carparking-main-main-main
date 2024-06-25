@@ -51,12 +51,44 @@ class _ReclamationDetailsPaymentPageState
     }
   }
 
-  void _sendNotification(String userId, String message) {
+  void _sendNotification(String userId) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
+      'type': 'Réclamation',
+      'description':
+          'Votre réclamation a été résolue. Veuillez vérifier votre page "Mes réclamations" pour plus de détails.',
+    });
+  }
+
+  Future<void> _updateReclamation(String reclamationId, String message) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('reclamations')
+          .doc(reclamationId)
+          .update({
+        'response': message,
+        'responseTimestamp': Timestamp.now(),
+      });
+    } catch (error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
+    }
+  }
+
+  void _closeReclamation() {
+    FirebaseFirestore.instance
+        .collection('reclamations')
+        .doc(widget.reclamationId)
+        .update({
+      'status': 'terminée',
+      'response': reponse,
+      'responseTimestamp': Timestamp.now(),
+    }).then((_) {
+      _sendNotification(widget.reclamationData['userId']);
+      Navigator.pop(context);
+    }).catchError((error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
     });
   }
 
@@ -71,16 +103,6 @@ class _ReclamationDetailsPaymentPageState
             fontSize: 20.0,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.send),
-            onPressed: () {
-              if (reponse.isNotEmpty) {
-                _sendNotification(widget.reclamationData['userId'], reponse);
-              }
-            },
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -179,15 +201,7 @@ class _ReclamationDetailsPaymentPageState
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: () {
-                  FirebaseFirestore.instance
-                      .collection('reclamations')
-                      .doc(widget.reclamationId)
-                      .update({
-                    'status': 'terminée',
-                  });
-                  Navigator.pop(context);
-                },
+                onPressed: _closeReclamation,
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,

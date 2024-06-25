@@ -2,6 +2,7 @@ import 'package:carparking/pages/cote_user/reservation/reservation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ListeParkingPage extends StatefulWidget {
   @override
@@ -16,7 +17,58 @@ class _ListeParkingPageState extends State<ListeParkingPage> {
   String _selectedSort = 'Trier par alphabet';
   String _searchQuery = '';
 
-  // Méthode pour récupérer la note moyenne de chaque parking
+  Future<Map<String, dynamic>> isPromotionActive(
+      Map<String, dynamic> parkingData, String parkingId, String userId) async {
+    bool hasGeneralPromotion = false;
+    double generalPromotionPercentage = 0;
+    double userSpecificPromotionPercentage = 0;
+
+    // Vérifier la promotion générale dans la collection 'parking'
+    if (parkingData['promotion'] != null) {
+      DateTime now = DateTime.now();
+      DateTime dateDebut =
+          (parkingData['promotion']['dateDebutPromotion'] as Timestamp)
+              .toDate();
+      DateTime dateFin =
+          (parkingData['promotion']['dateFinPromotion'] as Timestamp).toDate();
+
+      if (now.isAfter(dateDebut) && now.isBefore(dateFin)) {
+        hasGeneralPromotion = true;
+        generalPromotionPercentage =
+            parkingData['promotion']['remiseEnPourcentage'] ?? 0;
+      }
+    }
+
+    // Vérifier toutes les promotions spécifiques à l'utilisateur dans la collection 'promotions'
+    QuerySnapshot userPromoSnapshot = await FirebaseFirestore.instance
+        .collection('promotions')
+        .where('userId', isEqualTo: userId)
+        .where('parkingId', isEqualTo: parkingId)
+        .get();
+
+    DateTime now = DateTime.now();
+
+    for (var doc in userPromoSnapshot.docs) {
+      Map<String, dynamic> userPromoData = doc.data() as Map<String, dynamic>;
+      DateTime dateDebut = userPromoData['dateDebut'].toDate();
+      DateTime dateFin = userPromoData['dateFin'].toDate();
+
+      if (now.isAfter(dateDebut) && now.isBefore(dateFin)) {
+        userSpecificPromotionPercentage +=
+            userPromoData['remiseEnPourcentage'] ?? 0;
+      }
+    }
+
+    // Calculer la remise totale
+    double totalRemise =
+        generalPromotionPercentage + userSpecificPromotionPercentage;
+
+    return {
+      'isActive': hasGeneralPromotion || userSpecificPromotionPercentage > 0,
+      'totalRemise': totalRemise,
+    };
+  }
+
   Future<Map<String, double>> _getRatings() async {
     QuerySnapshot<Map<String, dynamic>> ratingsSnapshot =
         await FirebaseFirestore.instance.collection('ratings').get();
@@ -37,14 +89,12 @@ class _ListeParkingPageState extends State<ListeParkingPage> {
               toFirestore: (data, _) => data,
             );
 
-    // Apply sorting
     if (_selectedSort == 'Trier par alphabet') {
       query = query.orderBy('nom');
     } else {
       query = query.orderBy('distance', descending: false);
     }
 
-    // Apply search filter
     if (_searchQuery.isNotEmpty) {
       query = query.where('nom', isEqualTo: _searchQuery.toLowerCase().trim());
     }
@@ -54,6 +104,8 @@ class _ListeParkingPageState extends State<ListeParkingPage> {
 
   @override
   Widget build(BuildContext context) {
+    String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -170,144 +222,188 @@ class _ListeParkingPageState extends State<ListeParkingPage> {
                   Map<String, dynamic> data = document.data()!;
                   String parkingId = document.id;
                   double? moyenne = ratings[parkingId];
-                  print(
-                      'Document data: $data'); // Add this line to print the document data
-
                   String imageFileName = data['image'] ?? 'default.jpg';
 
-                  return Container(
-                    padding: EdgeInsets.all(16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.grey.withOpacity(0.5),
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 100,
-                          height: 100,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8.0),
-                            image: DecorationImage(
-                              image: AssetImage('lib/images/$imageFileName'),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16.0),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                data['nom'],
-                                style: GoogleFonts.montserrat(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                  return FutureBuilder<Map<String, dynamic>>(
+                    future: isPromotionActive(data, parkingId, currentUserId),
+                    builder: (context, promoSnapshot) {
+                      if (promoSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      }
+
+                      bool isPromoActive =
+                          promoSnapshot.data?['isActive'] ?? false;
+                      double totalRemise =
+                          promoSnapshot.data?['totalRemise'] ?? 0;
+
+                      return Stack(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(16.0),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.5),
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset: Offset(0, 3),
                                 ),
-                              ),
-                              SizedBox(height: 4.0),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_on,
-                                    color: Colors.grey.shade600,
-                                    size: 20.0,
-                                  ),
-                                  SizedBox(width: 4.0),
-                                  Text(
-                                    data['place'],
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 14,
-                                      color: Colors.grey.shade700,
+                              ],
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 100,
+                                  height: 100,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8.0),
+                                    image: DecorationImage(
+                                      image: AssetImage(
+                                          'lib/images/$imageFileName'),
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
-                                ],
-                              ),
-                              SizedBox(height: 8.0),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.directions_car,
-                                    color: Colors.grey.shade600,
-                                    size: 20.0,
-                                  ),
-                                  SizedBox(width: 4.0),
-                                  Text(
-                                    'Capacité: ${data['capacite']}',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 4.0),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.event_available,
-                                    color: Colors.grey.shade600,
-                                    size: 20.0,
-                                  ),
-                                  SizedBox(width: 4.0),
-                                  Text(
-                                    'Places Disponibles: ${data['placesDisponible']}',
-                                    style: GoogleFonts.montserrat(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 8.0),
-                              // Ajouter ici le widget pour afficher les étoiles de notation
-                              moyenne != null
-                                  ? _buildRatingStars(moyenne)
-                                  : Container(),
-                              SizedBox(height: 16.0),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => ReservationPage(
-                                          parkingId: document.id,
+                                ),
+                                SizedBox(width: 16.0),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        data['nom'],
+                                        style: GoogleFonts.montserrat(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                    );
-                                  },
-                                  child: Text(
-                                    'Réserver',
-                                    style: GoogleFonts.montserrat(
-                                      color: Colors.white,
-                                    ),
+                                      SizedBox(height: 4.0),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            color: Colors.grey.shade600,
+                                            size: 20.0,
+                                          ),
+                                          SizedBox(width: 4.0),
+                                          Text(
+                                            data['place'],
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 14,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 8.0),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.directions_car,
+                                            color: Colors.grey.shade600,
+                                            size: 20.0,
+                                          ),
+                                          SizedBox(width: 4.0),
+                                          Text(
+                                            'Capacité: ${data['capacite']}',
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 4.0),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.event_available,
+                                            color: Colors.grey.shade600,
+                                            size: 20.0,
+                                          ),
+                                          SizedBox(width: 4.0),
+                                          Text(
+                                            'Places Disponibles: ${data['placesDisponible']}',
+                                            style: GoogleFonts.montserrat(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 8.0),
+                                      moyenne != null
+                                          ? _buildRatingStars(moyenne)
+                                          : Container(),
+                                      SizedBox(height: 16.0),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: ElevatedButton(
+                                          onPressed: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    ReservationPage(
+                                                  parkingId: document.id,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          child: Text(
+                                            'Réserver',
+                                            style: GoogleFonts.montserrat(
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                const Color.fromRGBO(
+                                                    33, 150, 243, 1),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20.0),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromRGBO(33, 150, 243, 1),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20.0),
-                                    ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isPromoActive)
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.only(
+                                    topRight: Radius.circular(8),
+                                    bottomLeft: Radius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  'PROMO - ${totalRemise.toStringAsFixed(0)}%',
+                                  style: GoogleFonts.montserrat(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
+                            ),
+                        ],
+                      );
+                    },
                   );
                 },
               );
@@ -318,7 +414,6 @@ class _ListeParkingPageState extends State<ListeParkingPage> {
     );
   }
 
-  // Méthode pour construire le widget des étoiles
   Widget _buildRatingStars(double rating) {
     int fullStars = rating.floor();
     bool halfStar = (rating - fullStars) >= 0.5;
