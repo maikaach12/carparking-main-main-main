@@ -16,17 +16,34 @@ class ReclamationDetailsPage extends StatefulWidget {
 
 class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
   String reponse = '';
-
-  TextEditingController typeController = TextEditingController();
-  TextEditingController descriptionController = TextEditingController();
-
-  String selectedUserId = '';
-  String? userId; // userId récupéré à partir du matricule
+  String? userId;
+  Map<String, dynamic>? userData;
+  List<String> predefinedMessages = [
+    "Nous avons bien reçu votre réclamation et nous travaillons à résoudre le problème.",
+    "Nous vous prions de nous excuser pour le désagrément. Notre équipe examine la situation.",
+    "Votre réclamation a été prise en compte. Nous vous tiendrons informé de son évolution.",
+  ];
 
   @override
   void initState() {
     super.initState();
+    userId = widget.reclamationData['userId'];
+    _fetchUserData();
     _fetchUserIdFromMatricule();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (userId != null) {
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+      if (userDoc.exists) {
+        setState(() {
+          userData = userDoc.data() as Map<String, dynamic>?;
+        });
+      }
+    }
   }
 
   void _fetchUserIdFromMatricule() async {
@@ -39,9 +56,6 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
     if (documentSnapshot.exists) {
       setState(() {
         userId = documentSnapshot.get('userId');
-        if (selectedUserId.isEmpty && userId != null) {
-          selectedUserId = userId!;
-        }
       });
     }
   }
@@ -62,91 +76,39 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
         if (nbrSignal == 4) {
           await userSnapshot.reference.update({'active': false});
         }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Personne responsable signalée')),
+        );
       }
     }
   }
 
-  void _sendNotification(String userId, String type, String description) {
+  void _sendNotification(String userId) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'type': type,
-      'description': description,
       'timestamp': Timestamp.now(),
       'isRead': false,
+      'type': 'Réclamation',
+      'description':
+          'Votre réclamation a été résolue. Veuillez vérifier votre page "Mes réclamations" pour plus de détails.',
     });
   }
 
-  void _showNotificationBottomSheet() {
-    List<DropdownMenuItem<String>> userItems = [
-      if (widget.reclamationData['userId'] != null)
-        DropdownMenuItem(
-          value: widget.reclamationData['userId'],
-          child: Text('Utilisateur ayant soumis la réclamation'),
-        ),
-      if (userId != null)
-        DropdownMenuItem(
-          value: userId,
-          child: Text('Utilisateur à signaler'),
-        ),
-    ];
-
-    if (selectedUserId.isEmpty && userItems.isNotEmpty) {
-      selectedUserId = userItems.first.value!;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Choisir l\'utilisateur à notifier :'),
-              DropdownButton<String>(
-                value: userItems.any((item) => item.value == selectedUserId)
-                    ? selectedUserId
-                    : null,
-                hint: Text('Sélectionner un utilisateur'),
-                onChanged: (newValue) {
-                  setState(() {
-                    selectedUserId = newValue ?? '';
-                  });
-                },
-                items: userItems,
-              ),
-              TextField(
-                controller: typeController,
-                decoration: InputDecoration(
-                  labelText: 'Type de notification',
-                ),
-              ),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Description de la notification',
-                ),
-              ),
-              SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: selectedUserId.isNotEmpty
-                    ? () {
-                        String type = typeController.text;
-                        String description = descriptionController.text;
-
-                        _sendNotification(selectedUserId, type, description);
-                        Navigator.pop(
-                            context); // Ferme le bottom sheet après envoi
-                      }
-                    : null,
-                child: Text('Envoyer une notification'),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  void _closeReclamation() {
+    FirebaseFirestore.instance
+        .collection('reclamations')
+        .doc(widget.reclamationId)
+        .update({
+      'status': 'terminée',
+      'response': reponse,
+      'responseTimestamp': Timestamp.now(),
+    }).then((_) {
+      _sendNotification(widget.reclamationData['userId']);
+      Navigator.pop(context);
+    }).catchError((error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
+    });
   }
 
   @override
@@ -154,12 +116,6 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Détails de la réclamation'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.notification_important),
-            onPressed: _showNotificationBottomSheet,
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -167,47 +123,73 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Card(
-                child: ListTile(
-                  title: Text('Type'),
-                  subtitle: Text(widget.reclamationData['type'] ?? ''),
+              Text(
+                'Informations de la réclamation',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
                 ),
               ),
-              Card(
-                child: ListTile(
-                  title: Text('Description'),
-                  subtitle: Text(widget.reclamationData['description'] ?? ''),
-                ),
+              SizedBox(height: 16.0),
+              _buildInfoCard(
+                'Type',
+                widget.reclamationData['type'] ?? '',
+                icon: Icons.category,
               ),
-              Card(
-                child: ListTile(
-                  title: Text('Statut'),
-                  subtitle: Text(widget.reclamationData['status'] ?? ''),
-                ),
+              _buildInfoCard(
+                'Description',
+                widget.reclamationData['description'] ?? '',
+                icon: Icons.description,
               ),
-              if (widget.reclamationData['timestamp'] != null)
-                Card(
-                  child: ListTile(
-                    title: Text('Timestamp'),
-                    subtitle: Text(
-                      (widget.reclamationData['timestamp'] as Timestamp)
-                          .toDate()
-                          .toString(),
-                    ),
+              _buildInfoCard(
+                'Statut',
+                widget.reclamationData['status'] ?? '',
+                icon: Icons.info,
+              ),
+              _buildInfoCard(
+                'Date',
+                widget.reclamationData['timestamp'] != null
+                    ? (widget.reclamationData['timestamp'] as Timestamp)
+                        .toDate()
+                        .toString()
+                    : '',
+                icon: Icons.calendar_today,
+              ),
+              _buildInfoCard(
+                'Matricule concerné',
+                widget.reclamationData['matricule'] ?? '',
+                icon: Icons.car_rental,
+              ),
+              if (userData != null) ...[
+                SizedBox(height: 16.0),
+                Text(
+                  'Informations client',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18.0,
                   ),
                 ),
-              Card(
-                child: ListTile(
-                  title: Text('UserId'),
-                  subtitle: Text(widget.reclamationData['userId'] ?? ''),
+                _buildInfoCard(
+                  'Nom',
+                  userData!['name'] ?? '',
+                  icon: Icons.person,
                 ),
-              ),
-              Card(
-                child: ListTile(
-                  title: Text('Matricule de l\'autre personne'),
-                  subtitle: Text(widget.reclamationData['matricule'] ?? ''),
+                _buildInfoCard(
+                  'Prénom',
+                  userData!['familyName'] ?? '',
+                  icon: Icons.person,
                 ),
-              ),
+                _buildInfoCard(
+                  'Email',
+                  userData!['email'] ?? '',
+                  icon: Icons.email,
+                ),
+                _buildInfoCard(
+                  'Numéro de téléphone',
+                  userData!['phoneNumber'] ?? '',
+                  icon: Icons.phone,
+                ),
+              ],
               if (widget.reclamationData['type'] ==
                   'Place réservée non disponible')
                 Padding(
@@ -225,6 +207,28 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
                   ),
                 ),
               SizedBox(height: 16.0),
+              Text(
+                'Messages prédéfinis',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18.0,
+                ),
+              ),
+              SizedBox(height: 8.0),
+              ...predefinedMessages.map((message) => Card(
+                    child: ListTile(
+                      title: Text(message),
+                      onTap: () {
+                        setState(() {
+                          reponse = message;
+                        });
+                      },
+                      tileColor: reponse == message
+                          ? Colors.blue.withOpacity(0.3)
+                          : null,
+                    ),
+                  )),
+              SizedBox(height: 16.0),
               TextField(
                 onChanged: (value) {
                   setState(() {
@@ -232,7 +236,7 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
                   });
                 },
                 decoration: InputDecoration(
-                  labelText: 'Réponse',
+                  labelText: 'Réponse personnalisée',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8.0),
                   ),
@@ -240,15 +244,7 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: () {
-                  FirebaseFirestore.instance
-                      .collection('reclamations')
-                      .doc(widget.reclamationId)
-                      .update({
-                    'status': 'terminée',
-                  });
-                  Navigator.pop(context);
-                },
+                onPressed: _closeReclamation,
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
@@ -260,6 +256,40 @@ class _ReclamationDetailsPageState extends State<ReclamationDetailsPage> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoCard(String title, String subtitle,
+      {required IconData icon}) {
+    return Card(
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      margin: EdgeInsets.symmetric(vertical: 8.0),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: Colors.blue,
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16.0,
+          ),
+        ),
+        subtitle: Text(
+          subtitle,
+          style: TextStyle(
+            fontSize: 14.0,
+          ),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: 16.0,
+          vertical: 12.0,
         ),
       ),
     );

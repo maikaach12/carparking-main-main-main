@@ -26,6 +26,9 @@ class _ReclamationDetailsHandicapPageState
   Map<String, dynamic>? userData;
   List<String> predefinedMessages = [
     "Bonjour, nous avons bien reçu votre réclamation concernant le problème de réservation de handicap. Nous travaillons activement pour résoudre cette situation au plus vite. Merci pour votre patience.",
+    "Après vérification, le problème de réservation handicap était dû à une erreur technique. Correction apportée.",
+    "Nous avons augmenté le nombre de places handicapées disponibles pour éviter ce problème à l'avenir.",
+    "Un agent va vous contacter pour vous aider à finaliser votre réservation handicap.",
   ];
 
   @override
@@ -49,25 +52,44 @@ class _ReclamationDetailsHandicapPageState
     }
   }
 
-  Future<void> _updateReclamation(String reclamationId, String message) async {
-    await FirebaseFirestore.instance
-        .collection('reclamations')
-        .doc(reclamationId)
-        .update({
-      'response': message,
-      'responseTimestamp': Timestamp.now(),
-    });
-
-    _sendNotification(widget.reclamationData['userId'], message);
-  }
-
-  void _sendNotification(String userId, String message) {
+  void _sendNotification(String userId) {
     FirebaseFirestore.instance.collection('notifications').add({
       'userId': userId,
-      'description': message,
       'timestamp': Timestamp.now(),
       'isRead': false,
       'type': 'Réclamation',
+      'description':
+          'Votre réclamation concernant la réservation handicap a été résolue. Veuillez vérifier votre page "Mes réclamations" pour plus de détails.',
+    });
+  }
+
+  Future<void> _updateReclamation(String reclamationId, String message) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('reclamations')
+          .doc(reclamationId)
+          .update({
+        'response': message,
+        'responseTimestamp': Timestamp.now(),
+      });
+    } catch (error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
+    }
+  }
+
+  void _closeReclamation() {
+    FirebaseFirestore.instance
+        .collection('reclamations')
+        .doc(widget.reclamationId)
+        .update({
+      'status': 'terminée',
+      'response': reponse,
+      'responseTimestamp': Timestamp.now(),
+    }).then((_) {
+      _sendNotification(widget.reclamationData['userId']);
+      Navigator.pop(context);
+    }).catchError((error) {
+      print('Erreur lors de la mise à jour de la réclamation: $error');
     });
   }
 
@@ -111,14 +133,6 @@ class _ReclamationDetailsHandicapPageState
           ),
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.send),
-            onPressed: () {
-              if (reponse.isNotEmpty) {
-                _updateReclamation(widget.reclamationId, reponse);
-              }
-            },
-          ),
           IconButton(
             icon: Icon(Icons.download),
             onPressed: _downloadPDF,
@@ -222,16 +236,7 @@ class _ReclamationDetailsHandicapPageState
               ),
               SizedBox(height: 16.0),
               ElevatedButton(
-                onPressed: () {
-                  _updateReclamation(widget.reclamationId, reponse);
-                  FirebaseFirestore.instance
-                      .collection('reclamations')
-                      .doc(widget.reclamationId)
-                      .update({
-                    'status': 'terminée',
-                  });
-                  Navigator.pop(context);
-                },
+                onPressed: _closeReclamation,
                 child: Text('Clôturer la réclamation'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,

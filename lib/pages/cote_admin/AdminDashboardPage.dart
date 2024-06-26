@@ -15,6 +15,7 @@ import 'package:carparking/pages/cote_admin/stat/placeStat.dart';
 import 'package:carparking/pages/cote_admin/stat/reservStati.dart';
 import 'package:carparking/pages/cote_admin/stat/reservationchart.dart';
 import 'package:carparking/pages/cote_admin/stat/topUser.dart';
+import 'package:carparking/pages/login_signup/firstPage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -59,6 +60,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       builder: (BuildContext context) {
         return NotificationForm();
       },
+    );
+  }
+
+  void _logout() {
+    // Ajoute ici la logique de déconnexion, par exemple effacer les données utilisateur, fermer les sessions, etc.
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => FirstPage()),
+      (Route<dynamic> route) => false,
     );
   }
 
@@ -163,6 +173,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   onStatisticsTap: () =>
                       _navigateToReservationFrequencyPage(context),
                   onNotificationTap: _showNotificationForm,
+                  onLogoutTap: _logout, // Passe le callback de déconnexion ici
                 ),
                 Expanded(
                   child: SingleChildScrollView(
@@ -207,12 +218,14 @@ class Navbar extends StatelessWidget {
   final VoidCallback onHomeTap;
   final VoidCallback onStatisticsTap;
   final VoidCallback onNotificationTap;
+  final VoidCallback onLogoutTap; // Ajoute un callback pour la déconnexion
 
   Navbar({
     required this.onMenuTap,
     required this.onHomeTap,
     required this.onStatisticsTap,
     required this.onNotificationTap,
+    required this.onLogoutTap, // Ajoute le callback ici
   });
 
   @override
@@ -238,6 +251,10 @@ class Navbar extends StatelessWidget {
           IconButton(
             onPressed: onNotificationTap,
             icon: Icon(Icons.notifications),
+          ),
+          IconButton(
+            onPressed: onLogoutTap, // Ajoute l'appel ici
+            icon: Icon(Icons.logout),
           ),
         ],
       ),
